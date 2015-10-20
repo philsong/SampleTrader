@@ -314,4 +314,7 @@ class SPApiAccBal(Structure):
     ('Ccy',     c_char * 4) ]               #STR4货币
 
 
-  
+class SPApiCcyRate(Structure):
+    _fields = [
+    ('Ccy',     c_char * 4),
+    ('Rate',    c_double) ]
