@@ -3,20 +3,54 @@
 
 from ctypes import *
 from ctypes.wintypes import *
-#import string,StringIO
-import zmq
-#import zerorpc
 import time
-from random import randint
-import sys
-import random
-from  multiprocessing import Process
-from zmq.eventloop import ioloop, zmqstream
-import Queue
+import datetime
+from  multiprocessing import JoinableQueue as Queue
+from os.path import exists,join,realpath,curdir
+from platform import architecture
+import logging
+import threading
+import zmq
+import pdb
+from zmq.eventloop.ioloop import IOLoop
+from zmq.eventloop.zmqstream import ZMQStream
 
-priceQueue  = Queue.Queue()
-tickerQueue  = Queue.Queue()
-responseQueue  = Queue.Queue()
+                
+DBsubServerIP = "127.0.0.1"
+DBsubServerPort = 8198     #API connect to device
+ApiReqServerHost = "127.0.0.1"
+ApiReqServerPort = 8197
+ApiRepServerHost = "127.0.0.1"
+ApiRepServerPort = 8196     #API connect to device
+
+
+Contracts = ('HSIN5','HSIU5','HSIZ5',
+            'CLF6','CLG6','CLH6','CLJ6','CLK6','CLM6','CLN6','CLQ5','CLU5','CLV5','CLX5','CLZ5',
+            'CNH6','CNM6','CNN5','CNQ5','CNU5','CNZ5',
+            '6EH6','6EM6','6EU5','6EZ5',
+            'YMH6','YMM6','YMU5','YMZ5',
+            'GCG6','GCJ6','GCM6','GCQ5','GCV5','GCZ5',
+            'SIU5','SIZ5','SIF6','SIN6','SIK6','SIN6','SIU6','SIZ6','SIF7','SIN7','SIK7','SIN7','SIU7','SIZ7')
+            
+
+def initLogger(name='SPAPI', rootdir='.',level = logging.INFO):
+    LOG_FILE = 'ZoeSPAPI.log'
+    handler = logging.handlers.RotatingFileHandler(os.path.join( os.path.realpath(rootdir),LOG_FILE), maxBytes = 1024*1024, backupCount = 5)
+    fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'  
+    formatter = logging.Formatter(fmt)
+    handler.setFormatter(formatter)
+    logger = logging.getLogger()
+    logger.addHandler(handler)
+    logger.setLevel(level)    
+    return logger
+
+
+priceQueue  = Queue()
+tickerQueue  = Queue()
+responseQueue  = Queue()
+mutex=threading.Lock()
+mySPAPI = None
+
 
 SP_MAX_DEPTH = 20
 ORD_BUY        = 'B'            #买入
@@ -106,8 +140,8 @@ class SPApiPos(Structure):
         ('PLBaseCcy',     c_double),         #盈亏(基本货币)
         ('PL',     c_double),                #盈亏
         ('ExchangeRate',     c_double),      #汇率
-        ('AccNo',     c_char_p),             #STR16 用户
-        ('ProdCode',     c_char_p),          #合约代码 
+        ('AccNo',     c_char * 16),          #STR16 用户
+        ('ProdCode',     c_char * 16),          #合约代码 
         ('LongShort',     c_char),           #上日持仓买卖方向
         ('DecInPrice',     c_int8) ]         #tinyint小数点
 
@@ -128,13 +162,13 @@ class SPApiOrder(Structure):
     ('SchedTime',     c_long),            #预订发送时间
     ('TimeStamp',     c_long),            #服务器接收订单时间
     ('OrderOptions',     c_ulong),        #如果该合约支持收市后期货交易时段(T+1),可将此属性设为:1 
-    ('AccNo',     c_char_p),               #STR16 ('用户帐号
-    ('ProdCode',     c_char_p),            #合约代号
-    ('Initiator',     c_char_p),           #下单用户
-    ('Ref',     c_char_p),                 #参考
-    ('Ref2',     c_char_p),                #参考2
-    ('GatewayCode',     c_char_p),         #网关 
-    ('ClOrderId',     c_char_p),           #STR40 用户自定订单参考 2012-12-20 xiaolin
+    ('AccNo',     c_char * 16),               #STR16 ('用户帐号
+    ('ProdCode',     c_char * 16),            #合约代号
+    ('Initiator',     c_char * 16),           #下单用户
+    ('Ref',     c_char * 16),                 #参考
+    ('Ref2',     c_char * 16),                #参考2
+    ('GatewayCode',     c_char * 16),         #网关 
+    ('ClOrderId',     c_char * 40),           #STR40 用户自定订单参考 2012-12-20 xiaolin
     ('BuySell',     c_char),              #买卖方向
     ('StopType',     c_char),             #止损类型 
     ('OpenClose',     c_char),            #开平仓
@@ -154,13 +188,13 @@ class SPApiTrade(Structure):
     ('Qty',     c_long),                  #成交数量 
     ('TradeDate',     c_long),            #成交日期
     ('TradeTime',     c_long),            #成交时间
-    ('AccNo',     c_char_p),               #STR16用户 
-    ('ProdCode',     c_char_p),            #合约代码
-    ('Initiator',     c_char_p),           #下单用户
-    ('Ref',     c_char_p),                 #参考
-    ('Ref2',     c_char_p),                #参考2
-    ('GatewayCode',     c_char_p),         #网关
-    ('ClOrderId',     c_char_p),           #STR40 用户自定订单参考 2012-12-20 xiaolin
+    ('AccNo',     c_char * 16),               #STR16用户 
+    ('ProdCode',     c_char * 16),            #合约代码
+    ('Initiator',     c_char * 16),           #下单用户
+    ('Ref',     c_char * 16),                 #参考
+    ('Ref2',     c_char * 16),                #参考2
+    ('GatewayCode',     c_char * 16),         #网关
+    ('ClOrderId',     c_char * 40),           #STR40 用户自定订单参考 2012-12-20 xiaolin
     ('BuySell',     c_char),              #买卖方向
     ('OpenClose',     c_char),            #开平仓
     ('Status',     c_int8),            #状态
@@ -171,29 +205,29 @@ class SPApiInstrument(Structure):
     _fields_ = [
     ('Margin',     c_double),           #保证金
     ('ContractSize',     c_long),       #合约价值
-    ('MarketCode',     c_char_p),       #STR16 交易所代码 
-    ('InstCode',     c_char_p),         #产品系列代码
-    ('InstName',     c_char_p),         #STR40 英文名称 
-    ('InstName1',     c_char_p),        #繁体名称
-    ('InstName2',     c_char_p),        #简体名称
-    ('Ccy',     c_char_p),              #STR4 产品系列的交易币种
-    ('DecInPrice',     c_char),     #产品系列的小数位
+    ('MarketCode',     c_char * 16),       #STR16 交易所代码 
+    ('InstCode',     c_char * 16),         #产品系列代码
+    ('InstName',     c_char * 40),         #STR40 英文名称 
+    ('InstName1',     c_char * 40),        #繁体名称
+    ('InstName2',     c_char * 40),        #简体名称
+    ('Ccy',     c_char * 4),              #STR4 产品系列的交易币种
+    ('DecInPrice',     c_int8),     #产品系列的小数位
     ('InstType',     c_char) ]          #产品系列的类型
 
 
 class SPApiProduct(Structure):
     _fields_ = [
-   ('ProdCode',     c_char_p),          #STR16 产品代码
+   ('ProdCode',     c_char * 16),          #STR16 产品代码
    ('ProdType',     c_char),            #产品类型
-   ('ProdName',     c_char_p),          #STR40 产品英文名称
-   ('Underlying',     c_char_p),        #STR16 关联的期货合约
-   ('InstCode',     c_char_p),          #STR16 产品系列名称
+   ('ProdName',     c_char * 40),          #STR40 产品英文名称
+   ('Underlying',     c_char * 16),        #STR16 关联的期货合约
+   ('InstCode',     c_char * 16),          #STR16 产品系列名称
    ('ExpiryDate',     c_long),          #产品到期时间
    ('CallPut',     c_char),         #期权方向认购与认沽
    ('Strike',     c_long),              #期权行使价
    ('LotSize',     c_long),         #手数
-   ('ProdName1',     c_char_p),         #STR40 产品繁体名称
-   ('ProdName2',     c_char_p),         #STR40 产品简体名称
+   ('ProdName1',     c_char * 40),         #STR40 产品繁体名称
+   ('ProdName2',     c_char * 40),         #STR40 产品简体名称
    ('OptStyle',     c_char),            #期权的类型
    ('TickSize',     c_long) ]           #产品价格最小变化位数
 
@@ -218,20 +252,32 @@ class SPApiPrice(Structure):
     ('TurnoverVol',     c_double),           #总成交量
     ('TurnoverAmt',     c_double),           #总成交额
     ('OpenInt',     c_long),                 #未平仓
-    ('ProdCode',     c_char_p),               #STR16 合约代码
-    ('ProdName',     c_char_p),               #STR40 合约名称
-    ('DecInPrice',     c_char) ]              #合约小数位 
-
-
+    ('ProdCode',     c_char * 16),               #STR16 合约代码
+    ('ProdName',     c_char * 40),               #STR40 合约名称
+    ('DecInPrice',     c_int8) ]              #合约小数位 
+    def __str__(self):
+        return "$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s" % (
+        self.Bid,self.BidQty,self.BidTicket,self.Ask,self.AskQty,self.AskTicket,self.Last,
+        LastQty,self.LastTime,self.Equil,self.Open,self.High,self.Low,self.Close,self.CloseDate, 
+        TurnoverVol,self.TurnoverAmt,self.OpenInt,self.ProdCode,self.ProdName,self.DecInPrice )
+    def __expr__(self):
+        return self.__str__()
+        
 class SPApiTicker(Structure):
     _fields_ = [
     ('Price',     c_double),              #价格 
     ('Qty',     c_long),                  #成交量 
     ('TickerTime',     c_long),           #时间 
     ('DealSrc',     c_long),              #来源
-    ('ProdCode',     c_char_p),            #STR16 合约代码
-    ('DecInPrice',     c_char) ]           #小数位
-
+    ('ProdCode',     c_char * 16),        #STR16 合约代码
+    ('DecInPrice',     c_int8) ]          #小数位
+    def __str__(self):
+        return "%s|%s|%s|%s|%s|%s" % (self.ProdCode,self.Price,self.DecInPrice,self.Qty,self.TickerTime,self.DealSrc)
+    def __expr__(self):
+        return self.__str__()
+    def getDict(self):
+        #return {'fProductId':self.ProdCode, 'fPrice':self.Price, 'fQty':self.Qty, 'fTimeStamp':datetime.datetime.utcfromtimestamp(self.TickerTime)}
+        return {'fProductId':self.ProdCode, 'fPrice':self.Price, 'fQty':self.Qty, 'fTimeStamp':self.TickerTime}
 
 class SPApiAccInfo(Structure):
     _fields_ = [
@@ -251,12 +297,12 @@ class SPApiAccInfo(Structure):
     ('TodayTrans',     c_double),        #交易金額 
     ('LoanLimit',     c_double),         #證券可按總值
     ('TotalFee',     c_double),          #費用總額 
-    ('AccName',     c_char_p),            #('戶口名稱 
-    ('BaseCcy',     c_char_p),             #('基本貨幣
-    ('MarginClass',     c_char_p),        #('保証金類別
-    ('TradeClass',     c_char_p),         #('交易類別
-    ('ClientId',     c_char_p),           #('客戶
-    ('AEId',     c_char_p),               #('經紀
+    ('AccName',     c_char * 16),            #('戶口名稱 
+    ('BaseCcy',     c_char * 4),             #('基本貨幣
+    ('MarginClass',     c_char * 16),        #('保証金類別
+    ('TradeClass',     c_char * 16),         #('交易類別
+    ('ClientId',     c_char * 16),           #('客戶
+    ('AEId',     c_char * 16),               #('經紀
     ('AccType',     c_char),             #戶口類別 
     ('CtrlLevel',     c_char),           #控制級數
     ('Active',     c_char),              #生效
@@ -270,7 +316,7 @@ class SPApiAccBal(Structure):
     ('NotYetValue',     c_double),     #未交收 
     ('Unpresented',     c_double),     #未兑现 
     ('TodayOut',     c_double),        #提取要求
-    ('Ccy',     c_char_p) ]               #STR4货币
+    ('Ccy',     c_char * 4) ]               #STR4货币
 
 
 class SPCmdBase(object): #用于定义 SP 命令
@@ -286,107 +332,32 @@ class SPCommObject(object): #用于定义zmq中传输的内容
     def __init__(self):
         pass
         
-    
-        
-    
 
-
-loginStatus = {81:0,83:0,87:0,88:0}
-
-
-def LoginStatusUpdateAddr(login_status):
-    print 'LoginStatusUpdate: %s' % login_status
-def LoginReplyAddr(ret_code, ret_msg):
-    print('LogoutReply:%s,%s' % (ret_code,ret_msg))
-def LogoutReplyAddr(ret_code, ret_msg):
-    print('LogoutReply:%s,%s' % (ret_code,ret_msg))
-def LoginStatusUpdateAddr(login_status):
-    global loginStatus
-    print('LoginStatusUpdate:%s' % login_status)
-    loginStatus[81] = login_status
-def LoginAccInfoAddr(acc_no, max_bal, max_pos, max_order):
-    responseQueue.put((u'LoginAccInfo',acc_no, max_bal, max_pos, max_order))
-def ApiOrderRequestFailedAddr(tinyaction,order, err_code, err_msg):
-    responseQueue.put((u'OrderRequestFailed',tinyaction,order, err_code, err_msg))
-def ApiOrderReportAddr(rec_no, order):
-    responseQueue.put((u'OrderReport',rec_no,order))
-def ApiTradeReportAddr(rec_no, trade):
-    responseQueue.put((u'TradeReport',rec_no,trade))
-def ApiPriceUpdateAddr(price):
-    priceQueue.put(price)
-def ApiTickerUpdateAddr(ticker):
-    tickerQueue.put(ticker)
-def PServerLinkStatusUpdateAddr(host_id, con_status):
-    global loginStatus
-    print('PServerLinkStatusUpdate:%s,%s' % (host_id, con_status))
-    loginStatus[host_id] = con_status
-def ConnectionErrorAddr(host_id, link_err):
-    print('ConnectionError:%s,%s' % (host_id, link_err))
-def InstrumentListReplyAddr(is_ready, ret_msg):
-    print('InstrumentListReply:%s,%s' % (is_ready,ret_msg))
-def ProductListReplyAddr(is_ready, ret_msg):
-    print('ProductListReply:%s,%s' % (is_ready,ret_msg))
-def PswChangeReplyAddr(ret_code, ret_msg):  #add xiaolin 2013-03-19
-    print('PswChangeReply:%s,%s' % (ret_code,ret_msg))
-def ProductListByCodeReplyAddr(inst_code, is_ready, ret_msg):   #add 2013-04-25
-    print('ProductListByCodeReply:%s,%s,%s' % (inst_code,is_ready,ret_msg))
-
-cbLoginReplyAddr = WINFUNCTYPE(None,c_long,c_char_p)(LoginReplyAddr)
-cbLogoutReplyAddr = WINFUNCTYPE(None,c_long,c_char_p)(LogoutReplyAddr)
-cbLoginStatusUpdateAddr = WINFUNCTYPE(None,c_long)(LoginStatusUpdateAddr)
-cbLoginAccInfoAddr = WINFUNCTYPE(None,c_char_p,c_int,c_int,c_int)(LoginAccInfoAddr)
-cbApiOrderRequestFailedAddr = WINFUNCTYPE(None,c_int8,POINTER(SPApiOrder),c_long,c_char_p)(ApiOrderRequestFailedAddr)
-cbApiOrderReportAddr = WINFUNCTYPE(None,c_long,POINTER(SPApiOrder))(ApiOrderReportAddr)
-cbApiTradeReportAddr = WINFUNCTYPE(None,c_long,POINTER(SPApiOrder))(ApiTradeReportAddr)
-cbApiPriceUpdateAddr = WINFUNCTYPE(None,POINTER(SPApiPrice))(ApiPriceUpdateAddr)
-cbApiTickerUpdateAddr = WINFUNCTYPE(None,POINTER(SPApiTicker))(ApiTickerUpdateAddr)
-cbPServerLinkStatusUpdateAddr = WINFUNCTYPE(None,c_short,c_long)(PServerLinkStatusUpdateAddr)
-cbConnectionErrorAddr = WINFUNCTYPE(None,c_short,c_long)(ConnectionErrorAddr)
-cbInstrumentListReplyAddr = WINFUNCTYPE(None,c_bool,c_char_p)(InstrumentListReplyAddr)
-cbProductListReplyAddr = WINFUNCTYPE(None,c_bool,c_char_p)(ProductListReplyAddr)
-cbPswChangeReplyAddr = WINFUNCTYPE(None,c_long,c_char_p)(PswChangeReplyAddr)
-cbProductListByCodeReplyAddr = WINFUNCTYPE(None,c_char_p,c_bool,c_char_p)(ProductListByCodeReplyAddr)
 
 class spapi():
-    sp=None
-    '''
-    cbLoginReplyAddr = WINFUNCTYPE(None,c_long,c_char_p)
-    cbLogoutReplyAddr = WINFUNCTYPE(None,c_long,c_char_p)
-    cbLoginStatusUpdateAddr = WINFUNCTYPE(None,c_long)
-    cbLoginAccInfoAddr = WINFUNCTYPE(None,c_char_p,c_int,c_int,c_int)
-    cbApiOrderRequestFailedAddr = WINFUNCTYPE(None,c_int8,POINTER(SPApiOrder),c_long,c_char_p)
-    cbApiOrderReportAddr = WINFUNCTYPE(None,c_long,POINTER(SPApiOrder))
-    cbApiTradeReportAddr = WINFUNCTYPE(None,c_long,POINTER(SPApiOrder))
-    cbApiPriceUpdateAddr = WINFUNCTYPE(None,POINTER(SPApiPrice))
-    cbApiTickerUpdateAddr = WINFUNCTYPE(None,POINTER(SPApiTicker))
-    cbPServerLinkStatusUpdateAddr = WINFUNCTYPE(None,c_short,c_long)
-    cbConnectionErrorAddr = WINFUNCTYPE(None,c_short,c_long)
-    cbInstrumentListReplyAddr = WINFUNCTYPE(None,c_bool,c_char_p)
-    cbProductListReplyAddr = WINFUNCTYPE(None,c_bool,c_char_p)
-    cbPswChangeReplyAddr = WINFUNCTYPE(None,c_long,c_char_p)
-    cbProductListByCodeReplyAddr = WINFUNCTYPE(None,c_char_p,c_bool,c_char_p)
-    '''
-    cbLoginReplyAddr = WINFUNCTYPE(None,POINTER(c_long),POINTER(c_char_p))
-    cbLogoutReplyAddr = WINFUNCTYPE(None,POINTER(c_long),POINTER(c_char_p))
-    cbLoginStatusUpdateAddr = WINFUNCTYPE(None,POINTER(c_long))
-    cbLoginAccInfoAddr = WINFUNCTYPE(None,POINTER(c_char_p),POINTER(c_int),POINTER(c_int),POINTER(c_int))
-    cbApiOrderRequestFailedAddr = WINFUNCTYPE(None,POINTER(c_int8),POINTER(SPApiOrder),POINTER(c_long),POINTER(c_char_p))
-    cbApiOrderReportAddr = WINFUNCTYPE(None,POINTER(c_long),POINTER(SPApiOrder))
-    cbApiTradeReportAddr = WINFUNCTYPE(None,POINTER(c_long),POINTER(SPApiOrder))
-    cbApiPriceUpdateAddr = WINFUNCTYPE(None,POINTER(SPApiPrice))
-    cbApiTickerUpdateAddr = WINFUNCTYPE(None,POINTER(SPApiTicker))
-    cbPServerLinkStatusUpdateAddr = WINFUNCTYPE(None,POINTER(c_short),POINTER(c_long))
-    cbConnectionErrorAddr = WINFUNCTYPE(None,POINTER(c_short),POINTER(c_long))
-    cbInstrumentListReplyAddr = WINFUNCTYPE(None,POINTER(c_bool),POINTER(c_char_p))
-    cbProductListReplyAddr = WINFUNCTYPE(None,POINTER(c_bool),POINTER(c_char_p))
-    cbPswChangeReplyAddr = WINFUNCTYPE(None,POINTER(c_long),POINTER(c_char_p))
-    cbProductListByCodeReplyAddr = WINFUNCTYPE(None,POINTER(c_char_p),POINTER(c_bool),POINTER(c_char_p))
-    
+    sp=None   
     spapi_inited = False
+    priceQueue  = priceQueue
+    tickerQueue  = tickerQueue
+    responseQueue  = responseQueue
+    loginStatus = {80:(0,""),81:(0,""),83:(0,""),87:(0,""),88:(0,"")}
+    runFlags = {'login':False,'InstrumentList':False,'ProductList':False}
+
+    DBsubServerIP = DBsubServerIP
+    DBsubServerPort = DBsubServerPort
+    ApiReqServerHost = ApiReqServerHost
+    ApiReqServerPort = ApiReqServerPort
+    ApiRepServerHost = ApiRepServerHost
+    ApiRepServerPort = ApiRepServerPort
+    
     def __init__( self, dllfilename=None ):
         if (not dllfilename):
-            #dllfilename = 'spapidll64.dll'
-            dllfilename = 'spapidll.dll'
+            if u'32bit' in architecture():
+                dllfilename = u'spapidll.dll'
+            else:
+                dllfilename = u'spapidll64.dll'
+            if (not exists(dllfilename)):
+                dllfilename = u'api/'+ dllfilename
         if (not self.sp):
             self.sp = WinDLL(dllfilename)
             #self.sp = CDLL(dllfilename)
@@ -401,14 +372,16 @@ class spapi():
                     self.spapi_inited = True
         #self.SPAPI_Poll()
         self.SPAPI_SetBackgroundPoll(True)
-        
+
     def __del__(self):
+        self.Logout()
         self.SPAPI_Uninitialize()
         self.spapi_inited = False
         
     def init_fuctions1(self):
         self.GetDLLVersion = self.sp.SPAPI_GetDLLVersion
         self.Initialize = self.sp.SPAPI_Initialize
+        self.Initialize.restype = c_int
         self.Uninitialize = self.sp.SPAPI_Uninitialize
         self.SetBackgroundPoll = self.sp.SPAPI_SetBackgroundPoll
         self.Poll = self.sp.SPAPI_Poll
@@ -460,7 +433,7 @@ class spapi():
         #self.GetDLLVersion = self.sp.SPAPI_GetDLLVersion
         self.GetDLLVersion.restype = c_double
         #self.Initialize = self.sp.SPAPI_Initialize
-        self.Initialize.restype = c_int
+        #self.Initialize.restype = c_int
         #self.Uninitialize = self.sp.SPAPI_Uninitialize
         self.Uninitialize.restype = c_int
         #self.SetBackgroundPoll = self.sp.SPAPI_SetBackgroundPoll
@@ -474,6 +447,7 @@ class spapi():
         self.Logout.restype = c_int
         #self.LoginStatus = self.sp.SPAPI_GetLoginStatus
         self.LoginStatus.argtypes=[c_short]
+        self.LoginStatus.restype = c_int
         #self.AddOrder = self.sp.SPAPI_AddOrder
         self.AddOrder.restype = c_int
         self.AddOrder.argtypes = [POINTER(SPApiOrder)]
@@ -529,7 +503,7 @@ class spapi():
         self.GetPriceByCode.argtypes = [c_char_p,POINTER(SPApiPrice)]
         #self.GetInstrumentCount = self.sp.SPAPI_GetInstrumentCount
         self.GetInstrumentCount.restype = c_int
-        #self.GetInstrument = self.sp.SPAPI_GetInstrument
+        #self.GetInstrument = sinit_fuctions0elf.sp.SPAPI_GetInstrument
         self.GetInstrument.restype = c_int
         self.GetInstrument.argtypes = [c_int,POINTER(SPApiInstrument)]
         #self.GetInstrumentByCode = self.sp.SPAPI_GetInstrumentByCode
@@ -582,6 +556,7 @@ class spapi():
         #self.AccountLogout = self.sp.SPAPI_AccountLogout
         self.AccountLogout.restype = c_int
         self.AccountLogout.argtypes = [c_char_p]
+        
     #/*请求方法*/
     def SPAPI_GetDLLVersion(self):
         return self.GetDLLVersion()
@@ -596,6 +571,7 @@ class spapi():
     def SPAPI_SetLoginInfo(self, host, port, _license, app_id, user_id, password):
         return self.SetLoginInfo(host, port, _license, app_id, user_id, password)
     def SPAPI_Login(self):
+        #pdb.set_trace()
         return self.Login()
     def SPAPI_Logout(self):
         return self.Logout()
@@ -667,8 +643,8 @@ class spapi():
         return self.LoadTradeReport(acc_no)
     def SPAPI_LoadInstrumentList(self):
         return self.LoadInstrumentList()
-    #def SPAPI_LoadProductInfoList(self):
-    #    return self.LoadProductInfoList()
+    def SPAPI_LoadProductInfoList(self):
+        return self.LoadProductInfoList()
     def SPAPI_LoadProductInfoListByCode(self, inst_code):#add 2013-04-25
         return self.LoadProductInfoListByCode(inst_code)
     def SPAPI_ChangePassword(self, old_psw, new_psw): #add xiaolin 2013-03-19
@@ -680,270 +656,181 @@ class spapi():
 
     #define SPDLLCALL __stdcall
     #/*回调方法*/
-    '''
-    def LoginReplyAddr(self, ret_code, ret_msg):
-            print('Login reply CODE:%s,MSG:%s',(ret_code,ret_msg))
+    def getRegisterCallback(self,name):
 
-    def LogoutReplyAddr(self, ret_code, ret_msg):
-            pass
+        if name == "LoginReply":
+            def LoginReplyAddr(ret_code, ret_msg):
+                pdb.set_trace()
+                print('LoginReply:%s,%s' % (ret_code,ret_msg))
+                #spapi.loginStatus[81] = (ret_code,ret_msg)            
+            return WINFUNCTYPE(None,c_long,c_char_p)(LoginReplyAddr)
+        elif name == "LogoutReply":
+            def LogoutReplyAddr(ret_code, ret_msg):
+                print('LogoutReply:%s,%s' % (ret_code,ret_msg))
+                #spapi.loginStatus[81] = (ret_code,ret_msg)            
+            return WINFUNCTYPE(None,c_long,c_char_p)(LogoutReplyAddr)
+        elif name == "LoginStatusUpdate":
+            def LoginStatusUpdateAddr(login_status):
+                pdb.set_trace()
+                #global mutex
+                #print 'LoginStatusUpdate: %s' % login_status
+                #if mutex.acquire(1):
+                #    spapi.loginStatus[80] = (login_status,"")
+                #    mutex.release()            
+            return WINFUNCTYPE(None,c_long)(LoginStatusUpdateAddr)
+            #cbLoginStatusUpdateAddr = WINFUNCTYPE(None,c_long)(LoginStatusUpdateAddr)
+            #return cbLoginStatusUpdateAddr
+        elif name == "LoginAccInfo":
+            def LoginAccInfoAddr(acc_no, max_bal, max_pos, max_order):
+                responseQueue.put((u'LoginAccInfo',acc_no, max_bal, max_pos, max_order))            
+            return WINFUNCTYPE(None,c_char_p,c_int,c_int,c_int)(LoginAccInfoAddr)
+        elif name == "ApiOrderRequestFailed":
+            def ApiOrderRequestFailedAddr(tinyaction,order, err_code, err_msg):
+                responseQueue.put((u'OrderRequestFailed',tinyaction,order, err_code, err_msg))
+            return WINFUNCTYPE(None,c_int8,POINTER(SPApiOrder),c_long,c_char_p)(ApiOrderRequestFailedAddr)
+        elif name == "ApiOrderReport":
+            def ApiOrderReportAddr(rec_no, order):
+                responseQueue.put((u'OrderReport',rec_no,order.contents))
+            return WINFUNCTYPE(None,c_long,POINTER(SPApiOrder))(ApiOrderReportAddr)
+        elif name == "ApiTradeReport":
+            def ApiTradeReportAddr(rec_no, trade):
+                responseQueue.put((u'TradeReport',rec_no,trade.contents))
+            return WINFUNCTYPE(None,c_long,POINTER(SPApiOrder))(ApiTradeReportAddr)
+        elif name == "ApiPriceUpdate":
+            def ApiPriceUpdateAddr(price):
+                print str(price.contents)
+                priceQueue.put(str(price.contents))
+            return WINFUNCTYPE(None,POINTER(SPApiPrice))(ApiPriceUpdateAddr)
+        elif name == "ApiTickerUpdate":
+            def ApiTickerUpdateAddr(ticker):
+                #pdb.set_trace()
+                #print str(ticker.contents)
+                tickerQueue.put(ticker.contents.getDict())
+            return WINFUNCTYPE(None,POINTER(SPApiTicker))(ApiTickerUpdateAddr)
+        elif name == "PServerLinkStatusUpdate":
+            def PServerLinkStatusUpdateAddr(host_id, con_status):
+                print('PServerLinkStatusUpdate:%s,%s' % (host_id, con_status))
+                #spapi.loginStatus[host_id] = (con_status," ")
+            return WINFUNCTYPE(None,c_short,c_long)(PServerLinkStatusUpdateAddr)
+        elif name == "ConnectionError":
+            def ConnectionErrorAddr(host_id, link_err):
+                print('ConnectionError:%s,%s' % (host_id, link_err))
+            return WINFUNCTYPE(None,c_short,c_long)(ConnectionErrorAddr)
+        elif name == "ProductListReply":
+            def ProductListReplyAddr(is_ready, ret_msg):
+                print('ProductListReply:%s,%s' % (is_ready,ret_msg))
+            return WINFUNCTYPE(None,c_bool,c_char_p)(ProductListReplyAddr)
+        elif name == "InstrumentListReply":
+            def InstrumentListReplyAddr(is_ready, ret_msg):
+                print('InstrumentListReply:%s,%s' % (is_ready,ret_msg))
+                if is_ready:
+                   spapi.runFlags['InstrumentList'] = is_ready
+            return WINFUNCTYPE(None,c_bool,c_char_p)(InstrumentListReplyAddr)
+        elif name == "PswChangeReply":
+            def PswChangeReplyAddr(ret_code, ret_msg):  #add xiaolin 2013-03-19
+                print('PswChangeReply:%s,%s' % (ret_code,ret_msg))
+            return WINFUNCTYPE(None,c_long,c_char_p)(PswChangeReplyAddr)
+        elif name == "ProductListByCodeReply":
+            def ProductListByCodeReplyAddr(inst_code, is_ready, ret_msg):   #add 2013-04-25
+                print('ProductListByCodeReply:%s,%s,%s' % (inst_code,is_ready,ret_msg))
+            return WINFUNCTYPE(None,c_char_p,c_bool,c_char_p)(ProductListByCodeReplyAddr)
+        else:
+            return None
+            
 
-    def LoginStatusUpdateAddr(self, login_status):
-            print('Login Return Status:%s' % login_status)
+    def register_callbacks(self):        
+        self.sp.SPAPI_RegisterLoginReply(self.getRegisterCallback("LoginReply"))
+        self.sp.SPAPI_RegisterLogoutReply(self.getRegisterCallback("LogoutReply"))      
+        self.sp.SPAPI_RegisterLoginStatusUpdate(self.getRegisterCallback("LoginStatusUpdate"))
+        self.sp.SPAPI_RegisterLoginAccInfo(self.getRegisterCallback("LoginAccInfo"))
+        self.sp.SPAPI_RegisterOrderRequestFailed(self.getRegisterCallback("ApiOrderRequestFailed"))
+        self.sp.SPAPI_RegisterOrderReport(self.getRegisterCallback("ApiOrderReport"))
+        self.sp.SPAPI_RegisterTradeReport(self.getRegisterCallback("ApiTradeReport"))
+        self.sp.SPAPI_RegisterApiPriceUpdate(self.getRegisterCallback("ApiPriceUpdate"))
+        self.sp.SPAPI_RegisterTickerUpdate(self.getRegisterCallback("ApiTickerUpdate"))
+        self.sp.SPAPI_RegisterPServerLinkStatusUpdate(self.getRegisterCallback("PServerLinkStatusUpdate"))
+        self.sp.SPAPI_RegisterConnectionErrorUpdate(self.getRegisterCallback("ConnectionError"))
+        self.sp.SPAPI_RegisterProductListReply(self.getRegisterCallback("ProductListReply"))
+        self.sp.SPAPI_RegisterInstrumentListReply(self.getRegisterCallback("InstrumentListReply"))
+        self.sp.SPAPI_RegisterPswChangeReply(self.getRegisterCallback("PswChangeReply"))
+        self.sp.SPAPI_RegisterProductListByCodeReply(self.getRegisterCallback("ProductListByCodeReply"))
 
-    def LoginAccInfoAddr(self, acc_no, max_bal, max_pos, max_order):
-            pass
-
-    def ApiOrderRequestFailedAddr(self, tinyaction,order, err_code, err_msg):
-            pass
-
-    def ApiOrderReportAddr(self, rec_no, order):
-            pass
-
-    def ApiTradeReportAddr(self, rec_no, trade):
-            pass
-
-    def ApiPriceUpdateAddr(self, price):
-            pass
-
-    def ApiTickerUpdateAddr(self, ticker):
-            pass
-
-    def PServerLinkStatusUpdateAddr(self, host_id, con_status):
-            pass
-
-    def ConnectionErrorAddr(self, host_id, link_err):
-            pass
-
-    def InstrumentListReplyAddr(self, is_ready, ret_msg):
-            pass
-
-    def ProductListReplyAddr(self, is_ready, ret_msg):
-            pass
-
-    def PswChangeReplyAddr(self, ret_code, ret_msg):  #add xiaolin 2013-03-19
-            pass
-
-    def ProductListByCodeReplyAddr(self, inst_code, is_ready, ret_msg):   #add 2013-04-25
-            pass
-    '''
-
-
-    def register_callbacks(self):
-        
-        self.sp.SPAPI_RegisterLoginReply(cbLoginReplyAddr)
-        self.sp.SPAPI_RegisterLogoutReply(cbLogoutReplyAddr)
-        self.sp.SPAPI_RegisterLoginStatusUpdate(cbLoginStatusUpdateAddr)
-        self.sp.SPAPI_RegisterLoginAccInfo(cbLoginAccInfoAddr)
-        self.sp.SPAPI_RegisterOrderRequestFailed(cbApiOrderRequestFailedAddr)
-        self.sp.SPAPI_RegisterOrderReport(cbApiOrderReportAddr)
-        self.sp.SPAPI_RegisterTradeReport(cbApiTradeReportAddr)
-        self.sp.SPAPI_RegisterApiPriceUpdate(cbApiPriceUpdateAddr)
-        self.sp.SPAPI_RegisterTickerUpdate(cbApiTickerUpdateAddr)
-        self.sp.SPAPI_RegisterPServerLinkStatusUpdate(cbPServerLinkStatusUpdateAddr)
-        self.sp.SPAPI_RegisterConnectionErrorUpdate(cbConnectionErrorAddr)
-        #self.sp.SPAPI_RegisterProductListReply(cbProductListReplyAddr)
-        self.sp.SPAPI_RegisterInstrumentListReply(cbInstrumentListReplyAddr)
-        self.sp.SPAPI_RegisterPswChangeReply(cbPswChangeReplyAddr)
-        self.sp.SPAPI_RegisterProductListByCodeReply(cbProductListByCodeReplyAddr)
-        '''
-        self.sp.SPAPI_RegisterLoginReply(spapi.cbLoginReplyAddr(lambda ret_code, ret_msg: self.LoginReplyAddr(ret_code, ret_msg)))
-        self.sp.SPAPI_RegisterLogoutReply(spapi.cbLogoutReplyAddr(lambda ret_code, ret_msg: self.LogoutReplyAddr(ret_code, ret_msg)))
-        self.sp.SPAPI_RegisterLoginStatusUpdate(spapi.cbLoginStatusUpdateAddr(lambda login_status: self.LoginStatusUpdateAddr(login_status)))
-        self.sp.SPAPI_RegisterLoginAccInfo(spapi.cbLoginAccInfoAddr(lambda acc_no, max_bal, max_pos, max_order: self.LoginAccInfoAddr(acc_no, max_bal, max_pos, max_order)))
-        self.sp.SPAPI_RegisterOrderRequestFailed(spapi.cbApiOrderRequestFailedAddr(lambda tinyaction,order, err_code, err_msg: self.ApiOrderRequestFailedAddr(tinyaction,order, err_code, err_msg)))
-        self.sp.SPAPI_RegisterOrderReport(spapi.cbApiOrderReportAddr(lambda rec_no, order: self.ApiOrderReportAddr(rec_no, order)))
-        self.sp.SPAPI_RegisterTradeReport(spapi.cbApiTradeReportAddr(lambda rec_no, trade: self.ApiTradeReportAddr(rec_no, trade)))
-        self.sp.SPAPI_RegisterApiPriceUpdate(spapi.cbApiPriceUpdateAddr(lambda price: self.ApiPriceUpdateAddr(price)))
-        self.sp.SPAPI_RegisterTickerUpdate(spapi.cbApiTickerUpdateAddr(lambda ticker: self.ApiTickerUpdateAddr(ticker)))
-        self.sp.SPAPI_RegisterPServerLinkStatusUpdate(spapi.cbPServerLinkStatusUpdateAddr(lambda host_id, con_status: self.PServerLinkStatusUpdateAddr(host_id, con_status)))
-        self.sp.SPAPI_RegisterConnectionErrorUpdate(spapi.cbConnectionErrorAddr(lambda host_id, link_err: self.ConnectionErrorAddr(host_id, link_err)))
-        #self.sp.SPAPI_RegisterProductListReply(spapi.cbProductListReplyAddr(lambda is_ready, ret_msg: self.ProductListReplyAddr(is_ready, ret_msg)))
-        self.sp.SPAPI_RegisterInstrumentListReply(spapi.cbInstrumentListReplyAddr(lambda is_ready, ret_msg: self.InstrumentListReplyAddr(is_ready, ret_msg)))
-        self.sp.SPAPI_RegisterPswChangeReply(spapi.cbPswChangeReplyAddr(lambda ret_code, ret_msg: self.PswChangeReplyAddr(ret_code, ret_msg)))
-        self.sp.SPAPI_RegisterProductListByCodeReply(spapi.cbProductListByCodeReplyAddr(lambda inst_code, is_ready, ret_msg: self.ProductListByCodeReplyAddr(inst_code, is_ready, ret_msg)))
-        '''
     def CheckStatus( self ):
         f81 = self.SPAPI_GetLoginStatus(81)
         f83 = self.SPAPI_GetLoginStatus(83)
         f87 = self.SPAPI_GetLoginStatus(87)  
         f88 = self.SPAPI_GetLoginStatus(88)
         return (f81,f83,f87,f88)
-
-
-
-#host = u'118.143.0.253'  
-host = u'10.68.89.2'  
-port = 8080   
-REP_port = 5555     
-PUB_port = 5556
-PUSH_port = 5558     
-
-
-HEARTBEAT_LIVENESS = 3
-HEARTBEAT_INTERVAL = 1
-INTERVAL_INIT = 1
-INTERVAL_MAX = 32
-
-#  Paranoid Pirate Protocol constants
-PPP_READY = "\x01"      # Signals worker is ready
-PPP_HEARTBEAT = "\x02"  # Signals worker heartbeat
-
-ioloop.install()     
-
-def server_rep(port=5555):
-    context = zmq.Context()
-    socket = context.socket(zmq.REP)
-    socket.bind("tcp://*:%i" % port)
-    print "Running server on port: ", port
-    # serves only 5 request and dies
-    while True:
-        srs = socket.recv_multipart()
         
-        if not responseQueue.empty():
-            qrs = responseQueue.get()
-            socket.send_multipart(qrs)
-            responseQueue.task_done()
+    def SubscribeTickers(self,p_list=[]):
+        for t in p_list:
+            num = mySPAPI.SPAPI_SubscribeTicker(t,1)
+            if num==0:
+                print("SubscribeTicker %s return %d" % (t,num))  
+                
 
-
-def server_push(port=5556):
-    context = zmq.Context()
-    socket = context.socket(zmq.PUSH)
-    socket.bind("tcp://*:%i" % port)
-    print "Running server on port: ", port
-    # serves only 5 request and dies
-    while True:
-        rs = priceQueue.get()
-        socket.send_multipart(rs)
-        priceQueue.task_done()
-
-def worker_socket(context, poller):
-    """Helper function that returns a new configured socket
-       connected to the Paranoid Pirate queue"""
-    worker = context.socket(zmq.DEALER) # DEALER
-    identity = "%04X-%04X" % (randint(0, 0x10000), randint(0, 0x10000))
-    worker.setsockopt(zmq.IDENTITY, identity)
-    poller.register(worker, zmq.POLLIN)
-    worker.connect("tcp://localhost:5556")
-    worker.send(PPP_READY)
-    return worker
-               
-            
+#用于发布行情的进程，从行情队列里（API的callback函数里压进队列）读取行情，从ZMQ的PUB里发布出去                
+class ZmqServerThread(threading.Thread):
+    def __init__(self, spApi):
+        threading.Thread.__init__(self)
+        self.spApi =  spApi
+        self.context = zmq.Context()
+        self.hq_publisher = self.context.socket(zmq.PUB)
+        self.hq_publisher.connect('tcp://%s:%d' % (self.spApi.DBsubServerIP,self.spApi.DBsubServerPort)) 
+        self.st = self.context.socket(zmq.REQ)
+        self.st.connect("inproc://ticker")
+        self.sp = self.context.socket(zmq.REQ)
+        self.st.connect("inproc://price")
+        self.poller = zmq.Poller()
+        self.poller.register(self.st, zmq.POLLIN)
+        self.poller.register(self.sp, zmq.POLLIN)
         
-def server_pub(port=5558):
-    context = zmq.Context()
-    socket = context.socket(zmq.PUB)
-    socket.bind("tcp://*:%i" % port)
-    publisher_id = random.randrange(0,9999)
-    print "Running server on port: ", port
-    # serves only 5 request and dies
-    while True:
-        rs = tickerQueue.get()
-        socket.send_multipart(rs)
-        tickerQueue.task_done()
- 
+    def run(self):
+        while True:  
+            socks = dict(self.poller.poll())
+            if not tickerQueue.empty():
+                ts = tickerQueue.get()
+                print ts
+                self.hq_publisher.send_pyobj(["ticker",ts])
+              
+    def stop(self):
+        print "Trying to stop Server thread "
+        self.run = False
 
-def getcommand(msg):
-	print "Received control command: %s" % msg
-	if msg[0] == "Exit":
-		print "Received exit command, client will stop receiving messages"
-		should_continue = False
-		ioloop.IOLoop.instance().stop()
-        
-def process_message(msg):
-	print "Processing ... %s" % msg
 
-def client(port_push, port_sub):    
-	context = zmq.Context()
-	socket_pull = context.socket(zmq.PULL)
-	socket_pull.connect ("tcp://localhost:%s" % port_push)
-	stream_pull = zmqstream.ZMQStream(socket_pull)
-	stream_pull.on_recv(getcommand)
-	print "Connected to server with port %s" % port_push
-	
-	socket_sub = context.socket(zmq.SUB)
-	socket_sub.connect ("tcp://localhost:%s" % port_sub)
-	socket_sub.setsockopt(zmq.SUBSCRIBE, "9")
-	stream_sub = zmqstream.ZMQStream(socket_sub)
-	stream_sub.on_recv(process_message)
-	print "Connected to publisher with port %s" % port_sub
-	ioloop.IOLoop.instance().start()
-	print "Worker has stopped processing messages."
-
-def monitor():
-    context = zmq.Context(1)
-    poller = zmq.Poller()
-
-    liveness = HEARTBEAT_LIVENESS
-    interval = INTERVAL_INIT
-
-    heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-
-    worker = worker_socket(context, poller)
-    cycles = 0    
-    while True:
-        socks = dict(poller.poll(HEARTBEAT_INTERVAL * 1000))
-
-        # Handle worker activity on backend
-        if socks.get(worker) == zmq.POLLIN:
-            #  Get message
-            #  - 3-part envelope + content -> request
-            #  - 1-part HEARTBEAT -> heartbeat
-            frames = worker.recv_multipart()
-            if not frames:
-                break # Interrupted
-
-            if len(frames) == 3:
-                # Simulate various problems, after a few cycles
-                cycles += 1
-                if cycles > 3 and randint(0, 5) == 0:
-                    print "I: Simulating a crash"
-                    break
-                if cycles > 3 and randint(0, 5) == 0:
-                    print "I: Simulating CPU overload"
-                    time.sleep(3)
-                print "I: Normal reply"
-                worker.send_multipart(frames)
-                liveness = HEARTBEAT_LIVENESS
-                time.sleep(1)  # Do some heavy work
-            elif len(frames) == 1 and frames[0] == PPP_HEARTBEAT:
-                print "I: Queue heartbeat"
-                liveness = HEARTBEAT_LIVENESS
-            else:
-                print "E: Invalid message: %s" % frames
-            interval = INTERVAL_INIT
-        else:
-            liveness -= 1
-            if liveness == 0:
-                print "W: Heartbeat failure, can't reach queue"
-                print "W: Reconnecting in %0.2fs..." % interval
-                time.sleep(interval)
-
-                if interval < INTERVAL_MAX:
-                    interval *= 2
-                poller.unregister(worker)
-                worker.setsockopt(zmq.LINGER, 0)
-                worker.close()
-                worker = worker_socket(context, poller)
-                liveness = HEARTBEAT_LIVENESS
-        if time.time() > heartbeat_at:
-            heartbeat_at = time.time() + HEARTBEAT_INTERVAL
-            print "I: Worker heartbeat"
-            worker.send(PPP_HEARTBEAT)
-            
-        
 if __name__ == '__main__':
-    sp =  spapi()
-    sp.SPAPI_SetLoginInfo(host, port, '123456', 'tianjun', 'TIM01', 'Tj700120')
-    rt = sp.SPAPI_Login()
+    lock = threading.Lock()              # Lock (i.e., mutex)
+    cond = threading.Condition()  
+    threads = []
+    mySPAPI =  spapi()
+    #sp.SPAPI_SetLoginInfo('192.168.10.2', 8080, 'DLLAPITEST', 'DLLAPITEST', 'SPAPI11', '12345678')
+    mySPAPI.SPAPI_SetLoginInfo('10.68.89.2', 8080, '123456', 'tianjun', 'TIM01', 'Tj700120')
+    rt = mySPAPI.SPAPI_Login()
+    if rt == 0:
+        print "success send login request!\n"
+    zs = ZmqServerThread(mySPAPI)
+    zs.start()
+    time.sleep(1)
+    tickSC = False
     while True:
-        if loginStatus[83] == 5:
-            break
+        #print sp.loginStatus
+        if mutex.acquire(1):
+            ss = mySPAPI.loginStatus[80][0]
+            mutex.release()
+            if ss == 5:
+                if not mySPAPI.runFlags['InstrumentList']:
+                    mySPAPI.SPAPI_LoadInstrumentList()
+                else:
+                    if not tickSC:
+                        num = mySPAPI.SPAPI_GetProductCount()
+                        mySPAPI.SubscribeTickers(Contracts)
+                        tickSC = True
+            if ss == 1:
+                time.sleep(1)
+                continue               
         time.sleep(1)
-        print loginStatus
-    sp.SPAPI_LoadInstrumentList()
-    print sp.GetPriceCount()   
-    p1 = Process(target=server_push, args=(PUSH_port,)).start()
-    p2 = Process(target=server_pub, args=(PUB_port,)).start()
-    p2 = Process(target=server_rep, args=(REP_port,)).start()
-    #Process(target=client, args=(server_push_port,server_pub_port,)).start()        
-    monitor()
+    print mySPAPI.CheckStatus()
+    print mySPAPI.loginStatus
+    print "-------------"
+    #sp.SPAPI_LoadInstrumentList()
+    print mySPAPI.GetPriceCount()   

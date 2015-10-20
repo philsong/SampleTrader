@@ -1,0 +1,433 @@
+2015/10/16 00:00:16.733: Load Data End: acc:FSF01, mask:2 
+2015/10/16 00:00:16.751: Load Data End: acc:FSF01, mask:4 
+2015/10/16 00:00:16.783: Load Data End: acc:FSF01, mask:8 
+2015/10/16 00:00:17.594: Load Data End: acc:FSF01, mask:2 
+2015/10/16 00:00:17.653: Load Data End: acc:FSF01, mask:4 
+2015/10/16 00:00:17.671: Load Data End: acc:FSF01, mask:8 
+2015/10/16 00:00:17.795: Load Data End: acc:FSF01, mask:2 
+2015/10/16 00:00:17.827: Load Data End: acc:FSF01, mask:4 
+2015/10/16 00:00:17.858: Load Data End: acc:FSF01, mask:8 
+2015/10/16 00:02:11.030: Load Data End: acc:FSF01, mask:2 
+2015/10/16 00:02:11.069: Load Data End: acc:FSF01, mask:4 
+2015/10/16 00:02:11.077: Load Data End: acc:FSF01, mask:8 
+2015/10/16 00:04:28.969: Load Data End: acc:FSF01, mask:2 
+2015/10/16 00:04:28.975: Load Data End: acc:FSF01, mask:4 
+2015/10/16 00:04:28.992: Load Data End: acc:FSF01, mask:8 
+2015/10/16 00:20:43.015: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 00:20:43.021: PServer Login Status: HostId#88, Stat=1 
+2015/10/16 00:20:43.139: PServer Login Status: HostId#88, Stat=4 
+2015/10/16 00:20:43.261: PServer Login Status: HostId#88, Stat=8 
+2015/10/16 00:20:43.265: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 00:21:14.012: PServer Login Status: HostId#83, Stat=0 
+2015/10/16 00:21:14.014: PServer Login Status: HostId#83, Stat=1 
+2015/10/16 00:21:14.127: PServer Login Status: HostId#83, Stat=4 
+2015/10/16 00:21:15.059: PServer Login Status: HostId#83, Stat=8 
+2015/10/16 00:21:15.074: PServer Login Status: HostId#83, Stat=0 
+2015/10/16 01:35:53.515: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 01:35:53.516: TServer Login Status: 1 
+2015/10/16 01:35:53.843: TServer Login Status: 2 
+2015/10/16 01:35:53.844: TServer Login Status: 4 
+2015/10/16 01:35:53.845: Logging in ... 
+2015/10/16 01:35:53.890: PServer Login Status: HostId#83, Stat=11 
+2015/10/16 01:35:53.893: PServer Login Status: HostId#87, Stat=11 
+2015/10/16 01:35:53.893: PServer Login Status: HostId#88, Stat=11 
+2015/10/16 01:35:53.894: TServer Login Status: 5 
+2015/10/16 01:35:53.894: Login OK (Host:4ùn)! 
+2015/10/16 01:35:53.895: Account OK! 
+2015/10/16 01:35:54.484: Load Data End: acc:, mask:128 
+2015/10/16 01:35:56.499: Load Data End: acc:FSF01, mask:64 
+2015/10/16 01:35:56.578: Load Data End: acc:FSF01, mask:2 
+2015/10/16 01:35:56.594: Load Data End: acc:FSF01, mask:4 
+2015/10/16 01:35:56.609: Load Data End: acc:FSF01, mask:8 
+2015/10/16 01:35:56.625: PServer Login Status: HostId#83, Stat=1 
+2015/10/16 01:35:56.641: PServer Login Status: HostId#87, Stat=1 
+2015/10/16 01:35:56.656: PServer Login Status: HostId#88, Stat=1 
+2015/10/16 01:35:56.672: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 01:35:56.718: PServer Login Status: HostId#83, Stat=4 
+2015/10/16 01:35:56.734: PServer Login Status: HostId#87, Stat=4 
+2015/10/16 01:35:56.734: PServer Login Status: HostId#88, Stat=4 
+2015/10/16 01:35:56.890: PServer Login Status: HostId#87, Stat=5 
+2015/10/16 01:35:56.905: PServer Login Status: HostId#88, Stat=5 
+2015/10/16 01:35:57.171: PServer Login Status: HostId#83, Stat=5 
+2015/10/16 02:01:57.676: PServer Login Status: HostId#83, Stat=6 
+2015/10/16 02:01:57.677: PServer Login Status: HostId#87, Stat=6 
+2015/10/16 02:01:57.678: PServer Login Status: HostId#88, Stat=6 
+2015/10/16 02:01:57.679: Start Logout ... 
+2015/10/16 02:01:57.680: TServer Login Status: 0 
+2015/10/16 02:01:57.683: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 02:01:57.683: TServer Login Status: 1 
+2015/10/16 02:01:57.785: TServer Login Status: 2 
+2015/10/16 02:01:57.797: TServer Login Status: 4 
+2015/10/16 02:01:57.797: Logging in ... 
+2015/10/16 02:01:57.817: TServer Login Status: 5 
+2015/10/16 02:01:57.817: Login OK (Host:)! 
+2015/10/16 02:01:57.830: Account OK! 
+2015/10/16 02:01:58.379: Load Data End: acc:, mask:128 
+2015/10/16 02:01:58.569: PServer Login Status: HostId#83, Stat=7 
+2015/10/16 02:01:58.660: PServer Login Status: HostId#83, Stat=0 
+2015/10/16 02:01:58.895: PServer Login Status: HostId#87, Stat=7 
+2015/10/16 02:01:58.911: PServer Login Status: HostId#88, Stat=7 
+2015/10/16 02:01:59.004: PServer Login Status: HostId#87, Stat=0 
+2015/10/16 02:01:59.005: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 02:02:00.364: Load Data End: acc:FSF01, mask:64 
+2015/10/16 02:02:00.442: Load Data End: acc:FSF01, mask:2 
+2015/10/16 02:02:00.465: Load Data End: acc:FSF01, mask:4 
+2015/10/16 02:02:00.473: Load Data End: acc:FSF01, mask:8 
+2015/10/16 02:02:00.488: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 02:02:02.566: Load Data End: acc:FSF01, mask:2 
+2015/10/16 02:02:02.582: Load Data End: acc:FSF01, mask:4 
+2015/10/16 02:02:02.598: Load Data End: acc:FSF01, mask:8 
+2015/10/16 02:02:05.097: Load Data End: acc:FSF01, mask:2 
+2015/10/16 02:02:05.113: Load Data End: acc:FSF01, mask:4 
+2015/10/16 02:02:05.129: Load Data End: acc:FSF01, mask:8 
+2015/10/16 02:46:08.203: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 02:46:08.203: TServer Login Status: 1 
+2015/10/16 02:46:08.629: TServer Login Status: 2 
+2015/10/16 02:46:08.629: TServer Login Status: 4 
+2015/10/16 02:46:08.630: Logging in ... 
+2015/10/16 02:46:08.785: PServer Login Status: HostId#83, Stat=11 
+2015/10/16 02:46:08.786: PServer Login Status: HostId#87, Stat=11 
+2015/10/16 02:46:08.787: PServer Login Status: HostId#88, Stat=11 
+2015/10/16 02:46:08.787: TServer Login Status: 5 
+2015/10/16 02:46:08.788: Login OK (Host:4ùn)! 
+2015/10/16 02:46:08.789: Account OK! 
+2015/10/16 02:46:09.346: Load Data End: acc:, mask:128 
+2015/10/16 02:46:11.330: Load Data End: acc:FSF01, mask:64 
+2015/10/16 02:46:11.408: Load Data End: acc:FSF01, mask:2 
+2015/10/16 02:46:11.424: Load Data End: acc:FSF01, mask:4 
+2015/10/16 02:46:11.439: Load Data End: acc:FSF01, mask:8 
+2015/10/16 02:46:11.456: PServer Login Status: HostId#83, Stat=1 
+2015/10/16 02:46:11.471: PServer Login Status: HostId#87, Stat=1 
+2015/10/16 02:46:11.486: PServer Login Status: HostId#88, Stat=1 
+2015/10/16 02:46:11.502: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 02:46:11.548: PServer Login Status: HostId#83, Stat=4 
+2015/10/16 02:46:11.549: PServer Login Status: HostId#87, Stat=4 
+2015/10/16 02:46:11.689: PServer Login Status: HostId#87, Stat=5 
+2015/10/16 02:46:12.126: PServer Login Status: HostId#83, Stat=5 
+2015/10/16 02:46:32.531: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 02:46:32.533: PServer Login Status: HostId#88, Stat=1 
+2015/10/16 02:46:32.640: PServer Login Status: HostId#88, Stat=4 
+2015/10/16 02:46:32.781: PServer Login Status: HostId#88, Stat=5 
+2015/10/16 03:09:43.500: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 03:09:43.502: PServer Login Status: HostId#88, Stat=1 
+2015/10/16 03:09:43.594: PServer Login Status: HostId#88, Stat=4 
+2015/10/16 03:09:43.734: PServer Login Status: HostId#88, Stat=5 
+2015/10/16 07:10:34.296: Load Data End: acc:FSF01, mask:2 
+2015/10/16 07:10:34.311: Load Data End: acc:FSF01, mask:4 
+2015/10/16 07:10:34.326: Load Data End: acc:FSF01, mask:8 
+2015/10/16 07:10:34.842: Load Data End: acc:FSF01, mask:2 
+2015/10/16 07:10:34.858: Load Data End: acc:FSF01, mask:4 
+2015/10/16 07:10:34.873: Load Data End: acc:FSF01, mask:8 
+2015/10/16 08:04:50.903: PServer Login Status: HostId#83, Stat=6 
+2015/10/16 08:04:50.904: PServer Login Status: HostId#87, Stat=6 
+2015/10/16 08:04:50.905: PServer Login Status: HostId#88, Stat=6 
+2015/10/16 08:04:50.905: Start Logout ... 
+2015/10/16 08:04:50.906: TServer Login Status: 0 
+2015/10/16 08:04:50.910: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 08:04:50.910: TServer Login Status: 1 
+2015/10/16 08:04:50.980: TServer Login Status: 2 
+2015/10/16 08:04:50.981: TServer Login Status: 4 
+2015/10/16 08:04:50.982: Logging in ... 
+2015/10/16 08:04:51.003: PServer Login Status: HostId#83, Stat=7 
+2015/10/16 08:04:51.004: PServer Login Status: HostId#87, Stat=7 
+2015/10/16 08:04:51.012: TServer Login Status: 5 
+2015/10/16 08:04:51.012: Login OK (Host:)! 
+2015/10/16 08:04:51.017: Account OK! 
+2015/10/16 08:04:51.090: PServer Login Status: HostId#83, Stat=0 
+2015/10/16 08:04:51.091: PServer Login Status: HostId#87, Stat=0 
+2015/10/16 08:04:51.215: PServer Login Status: HostId#88, Stat=7 
+2015/10/16 08:04:51.308: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 08:04:51.575: Load Data End: acc:, mask:128 
+2015/10/16 08:04:53.558: Load Data End: acc:FSF01, mask:64 
+2015/10/16 08:04:53.636: Load Data End: acc:FSF01, mask:2 
+2015/10/16 08:04:53.652: Load Data End: acc:FSF01, mask:4 
+2015/10/16 08:04:53.668: Load Data End: acc:FSF01, mask:8 
+2015/10/16 08:04:53.683: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 08:04:55.683: Load Data End: acc:FSF01, mask:2 
+2015/10/16 08:04:55.699: Load Data End: acc:FSF01, mask:4 
+2015/10/16 08:04:55.714: Load Data End: acc:FSF01, mask:8 
+2015/10/16 08:04:59.292: Load Data End: acc:FSF01, mask:2 
+2015/10/16 08:04:59.308: Load Data End: acc:FSF01, mask:4 
+2015/10/16 08:04:59.323: Load Data End: acc:FSF01, mask:8 
+2015/10/16 08:09:36.711: Load Data End: acc:FSF01, mask:2 
+2015/10/16 08:09:36.726: Load Data End: acc:FSF01, mask:4 
+2015/10/16 08:09:36.742: Load Data End: acc:FSF01, mask:8 
+2015/10/16 08:09:37.055: Load Data End: acc:FSF01, mask:2 
+2015/10/16 08:09:37.086: Load Data End: acc:FSF01, mask:4 
+2015/10/16 08:09:37.101: Load Data End: acc:FSF01, mask:8 
+2015/10/16 10:07:01.592: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 10:07:01.593: TServer Login Status: 1 
+2015/10/16 10:07:01.853: TServer Login Status: 2 
+2015/10/16 10:07:01.854: TServer Login Status: 4 
+2015/10/16 10:07:01.854: Logging in ... 
+2015/10/16 10:07:01.884: PServer Login Status: HostId#83, Stat=11 
+2015/10/16 10:07:01.886: PServer Login Status: HostId#87, Stat=11 
+2015/10/16 10:07:01.886: PServer Login Status: HostId#88, Stat=11 
+2015/10/16 10:07:01.887: TServer Login Status: 5 
+2015/10/16 10:07:01.887: Login OK (Host:4ùn)! 
+2015/10/16 10:07:01.888: Account OK! 
+2015/10/16 10:07:02.446: Load Data End: acc:, mask:128 
+2015/10/16 10:07:04.430: Load Data End: acc:FSF01, mask:64 
+2015/10/16 10:07:04.508: Load Data End: acc:FSF01, mask:2 
+2015/10/16 10:07:04.524: Load Data End: acc:FSF01, mask:4 
+2015/10/16 10:07:04.540: Load Data End: acc:FSF01, mask:8 
+2015/10/16 10:07:04.556: PServer Login Status: HostId#83, Stat=1 
+2015/10/16 10:07:04.572: PServer Login Status: HostId#87, Stat=1 
+2015/10/16 10:07:04.587: PServer Login Status: HostId#88, Stat=1 
+2015/10/16 10:07:04.602: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 10:07:04.633: PServer Login Status: HostId#83, Stat=4 
+2015/10/16 10:07:04.649: PServer Login Status: HostId#87, Stat=4 
+2015/10/16 10:07:04.665: PServer Login Status: HostId#88, Stat=4 
+2015/10/16 10:07:04.774: PServer Login Status: HostId#87, Stat=5 
+2015/10/16 10:07:04.791: PServer Login Status: HostId#88, Stat=5 
+2015/10/16 10:07:05.055: PServer Login Status: HostId#83, Stat=5 
+2015/10/16 12:06:15.342: PServer Login Status: HostId#83, Stat=6 
+2015/10/16 12:06:15.345: PServer Login Status: HostId#87, Stat=6 
+2015/10/16 12:06:15.346: PServer Login Status: HostId#88, Stat=6 
+2015/10/16 12:06:15.347: Start Logout ... 
+2015/10/16 12:06:15.347: TServer Login Status: 0 
+2015/10/16 12:06:15.349: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 12:06:15.350: TServer Login Status: 1 
+2015/10/16 12:06:15.436: TServer Login Status: 2 
+2015/10/16 12:06:15.437: TServer Login Status: 4 
+2015/10/16 12:06:15.438: Logging in ... 
+2015/10/16 12:06:15.442: PServer Login Status: HostId#83, Stat=7 
+2015/10/16 12:06:15.444: PServer Login Status: HostId#87, Stat=7 
+2015/10/16 12:06:15.445: PServer Login Status: HostId#88, Stat=7 
+2015/10/16 12:06:15.467: TServer Login Status: 5 
+2015/10/16 12:06:15.494: Login OK (Host:xè:lùn é’|`)! 
+2015/10/16 12:06:15.498: Account OK! 
+2015/10/16 12:06:15.545: PServer Login Status: HostId#83, Stat=0 
+2015/10/16 12:06:15.549: PServer Login Status: HostId#87, Stat=0 
+2015/10/16 12:06:15.549: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 12:06:16.061: Load Data End: acc:, mask:128 
+2015/10/16 12:06:18.045: Load Data End: acc:FSF01, mask:64 
+2015/10/16 12:06:18.123: Load Data End: acc:FSF01, mask:2 
+2015/10/16 12:06:18.139: Load Data End: acc:FSF01, mask:4 
+2015/10/16 12:06:18.155: Load Data End: acc:FSF01, mask:8 
+2015/10/16 12:06:18.170: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 12:06:20.357: Load Data End: acc:FSF01, mask:2 
+2015/10/16 12:06:20.373: Load Data End: acc:FSF01, mask:4 
+2015/10/16 12:06:20.389: Load Data End: acc:FSF01, mask:8 
+2015/10/16 12:06:23.748: Load Data End: acc:FSF01, mask:2 
+2015/10/16 12:06:23.764: Load Data End: acc:FSF01, mask:4 
+2015/10/16 12:06:23.779: Load Data End: acc:FSF01, mask:8 
+2015/10/16 14:03:30.608: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 14:03:30.609: TServer Login Status: 1 
+2015/10/16 14:03:30.881: TServer Login Status: 2 
+2015/10/16 14:03:30.882: TServer Login Status: 4 
+2015/10/16 14:03:30.883: Logging in ... 
+2015/10/16 14:03:30.913: PServer Login Status: HostId#83, Stat=11 
+2015/10/16 14:03:30.914: PServer Login Status: HostId#87, Stat=11 
+2015/10/16 14:03:30.915: PServer Login Status: HostId#88, Stat=11 
+2015/10/16 14:03:30.915: TServer Login Status: 5 
+2015/10/16 14:03:30.916: Login OK (Host:4ùo)! 
+2015/10/16 14:03:30.917: Account OK! 
+2015/10/16 14:03:31.490: Load Data End: acc:, mask:128 
+2015/10/16 14:03:33.490: Load Data End: acc:FSF01, mask:64 
+2015/10/16 14:03:33.568: Load Data End: acc:FSF01, mask:2 
+2015/10/16 14:03:33.584: Load Data End: acc:FSF01, mask:4 
+2015/10/16 14:03:33.599: Load Data End: acc:FSF01, mask:8 
+2015/10/16 14:03:33.615: PServer Login Status: HostId#83, Stat=1 
+2015/10/16 14:03:33.631: PServer Login Status: HostId#87, Stat=1 
+2015/10/16 14:03:33.647: PServer Login Status: HostId#88, Stat=1 
+2015/10/16 14:03:33.662: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 14:03:33.709: PServer Login Status: HostId#83, Stat=4 
+2015/10/16 14:03:33.724: PServer Login Status: HostId#87, Stat=4 
+2015/10/16 14:03:33.740: PServer Login Status: HostId#88, Stat=4 
+2015/10/16 14:03:33.865: PServer Login Status: HostId#83, Stat=5 
+2015/10/16 14:03:33.881: PServer Login Status: HostId#87, Stat=5 
+2015/10/16 14:03:33.896: PServer Login Status: HostId#88, Stat=5 
+2015/10/16 16:04:23.142: PServer Login Status: HostId#83, Stat=6 
+2015/10/16 16:04:23.143: PServer Login Status: HostId#87, Stat=6 
+2015/10/16 16:04:23.147: PServer Login Status: HostId#88, Stat=6 
+2015/10/16 16:04:23.148: Start Logout ... 
+2015/10/16 16:04:23.149: TServer Login Status: 0 
+2015/10/16 16:04:23.158: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 16:04:23.158: TServer Login Status: 1 
+2015/10/16 16:04:23.454: PServer Login Status: HostId#83, Stat=7 
+2015/10/16 16:04:23.466: PServer Login Status: HostId#87, Stat=7 
+2015/10/16 16:04:23.486: PServer Login Status: HostId#88, Stat=7 
+2015/10/16 16:04:23.767: PServer Login Status: HostId#83, Stat=0 
+2015/10/16 16:04:23.782: PServer Login Status: HostId#87, Stat=0 
+2015/10/16 16:04:23.798: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 16:04:32.641: TServer Login Status: 2 
+2015/10/16 16:04:32.642: TServer Login Status: 4 
+2015/10/16 16:04:32.642: Logging in ... 
+2015/10/16 16:04:32.751: PServer Login Status: HostId#83, Stat=11 
+2015/10/16 16:04:32.791: PServer Login Status: HostId#87, Stat=11 
+2015/10/16 16:04:32.796: PServer Login Status: HostId#88, Stat=11 
+2015/10/16 16:04:32.796: TServer Login Status: 5 
+2015/10/16 16:04:32.801: Login OK (Host:)! 
+2015/10/16 16:04:32.802: Account OK! 
+2015/10/16 16:04:33.360: Load Data End: acc:, mask:128 
+2015/10/16 16:04:35.344: Load Data End: acc:FSF01, mask:64 
+2015/10/16 16:04:35.422: Load Data End: acc:FSF01, mask:2 
+2015/10/16 16:04:35.438: Load Data End: acc:FSF01, mask:4 
+2015/10/16 16:04:35.453: Load Data End: acc:FSF01, mask:8 
+2015/10/16 16:04:35.469: PServer Login Status: HostId#83, Stat=1 
+2015/10/16 16:04:35.485: PServer Login Status: HostId#87, Stat=1 
+2015/10/16 16:04:35.501: PServer Login Status: HostId#88, Stat=1 
+2015/10/16 16:04:35.516: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 16:04:35.781: PServer Login Status: HostId#83, Stat=4 
+2015/10/16 16:04:35.797: PServer Login Status: HostId#87, Stat=4 
+2015/10/16 16:04:35.813: PServer Login Status: HostId#88, Stat=4 
+2015/10/16 16:04:36.328: PServer Login Status: HostId#83, Stat=5 
+2015/10/16 16:04:36.344: PServer Login Status: HostId#87, Stat=5 
+2015/10/16 16:04:36.360: PServer Login Status: HostId#88, Stat=5 
+2015/10/16 16:04:40.344: Load Data End: acc:FSF01, mask:2 
+2015/10/16 16:04:40.359: Load Data End: acc:FSF01, mask:4 
+2015/10/16 16:04:40.375: Load Data End: acc:FSF01, mask:8 
+2015/10/16 16:04:43.187: Load Data End: acc:FSF01, mask:2 
+2015/10/16 16:04:43.203: Load Data End: acc:FSF01, mask:4 
+2015/10/16 16:04:43.218: Load Data End: acc:FSF01, mask:8 
+2015/10/16 16:07:46.284: PServer Login Status: HostId#83, Stat=6 
+2015/10/16 16:07:46.285: PServer Login Status: HostId#87, Stat=6 
+2015/10/16 16:07:46.286: PServer Login Status: HostId#88, Stat=6 
+2015/10/16 16:07:46.287: Start Logout ... 
+2015/10/16 16:07:46.287: TServer Login Status: 0 
+2015/10/16 16:07:46.290: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 16:07:46.290: TServer Login Status: 1 
+2015/10/16 16:07:46.378: TServer Login Status: 2 
+2015/10/16 16:07:46.379: TServer Login Status: 4 
+2015/10/16 16:07:46.379: Logging in ... 
+2015/10/16 16:07:46.394: TServer Login Status: 5 
+2015/10/16 16:07:46.395: Login OK (Host:4ùo)! 
+2015/10/16 16:07:46.399: Account OK! 
+2015/10/16 16:07:46.550: PServer Login Status: HostId#83, Stat=7 
+2015/10/16 16:07:46.565: PServer Login Status: HostId#87, Stat=7 
+2015/10/16 16:07:46.566: PServer Login Status: HostId#88, Stat=7 
+2015/10/16 16:07:46.784: PServer Login Status: HostId#83, Stat=0 
+2015/10/16 16:07:46.815: PServer Login Status: HostId#87, Stat=0 
+2015/10/16 16:07:46.816: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 16:07:46.972: Load Data End: acc:, mask:128 
+2015/10/16 16:07:48.956: Load Data End: acc:FSF01, mask:64 
+2015/10/16 16:07:49.034: Load Data End: acc:FSF01, mask:2 
+2015/10/16 16:07:49.050: Load Data End: acc:FSF01, mask:4 
+2015/10/16 16:07:49.065: Load Data End: acc:FSF01, mask:8 
+2015/10/16 16:07:49.081: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 16:07:52.065: Load Data End: acc:FSF01, mask:2 
+2015/10/16 16:07:52.081: Load Data End: acc:FSF01, mask:4 
+2015/10/16 16:07:52.096: Load Data End: acc:FSF01, mask:8 
+2015/10/16 16:07:56.877: Load Data End: acc:FSF01, mask:2 
+2015/10/16 16:07:56.893: Load Data End: acc:FSF01, mask:4 
+2015/10/16 16:07:56.908: Load Data End: acc:FSF01, mask:8 
+2015/10/16 17:09:26.111: Start Logout ... 
+2015/10/16 17:09:26.112: TServer Login Status: 0 
+2015/10/16 17:09:26.113: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 17:09:26.114: TServer Login Status: 1 
+2015/10/16 17:09:26.314: TServer Login Status: 2 
+2015/10/16 17:09:26.314: TServer Login Status: 4 
+2015/10/16 17:09:26.315: Logging in ... 
+2015/10/16 17:09:26.361: PServer Login Status: HostId#83, Stat=11 
+2015/10/16 17:09:26.362: PServer Login Status: HostId#87, Stat=11 
+2015/10/16 17:09:26.362: PServer Login Status: HostId#88, Stat=11 
+2015/10/16 17:09:26.362: TServer Login Status: 5 
+2015/10/16 17:09:26.366: Login OK (Host:4ùo)! 
+2015/10/16 17:09:26.367: Account OK! 
+2015/10/16 17:09:26.939: Load Data End: acc:, mask:128 
+2015/10/16 17:09:28.923: Load Data End: acc:FSF01, mask:64 
+2015/10/16 17:09:29.001: Load Data End: acc:FSF01, mask:2 
+2015/10/16 17:09:29.017: Load Data End: acc:FSF01, mask:4 
+2015/10/16 17:09:29.032: Load Data End: acc:FSF01, mask:8 
+2015/10/16 17:09:29.048: PServer Login Status: HostId#83, Stat=1 
+2015/10/16 17:09:29.064: PServer Login Status: HostId#87, Stat=1 
+2015/10/16 17:09:29.080: PServer Login Status: HostId#88, Stat=1 
+2015/10/16 17:09:29.095: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 17:09:29.126: PServer Login Status: HostId#83, Stat=4 
+2015/10/16 17:09:29.142: PServer Login Status: HostId#87, Stat=4 
+2015/10/16 17:09:29.157: PServer Login Status: HostId#88, Stat=4 
+2015/10/16 17:09:29.251: PServer Login Status: HostId#83, Stat=5 
+2015/10/16 17:09:29.267: PServer Login Status: HostId#87, Stat=5 
+2015/10/16 17:09:29.282: PServer Login Status: HostId#88, Stat=5 
+2015/10/16 17:09:32.548: Load Data End: acc:FSF01, mask:2 
+2015/10/16 17:09:32.563: Load Data End: acc:FSF01, mask:4 
+2015/10/16 17:09:32.579: Load Data End: acc:FSF01, mask:8 
+2015/10/16 20:11:05.953: PServer Login Status: HostId#83, Stat=6 
+2015/10/16 20:11:05.954: PServer Login Status: HostId#87, Stat=6 
+2015/10/16 20:11:05.956: PServer Login Status: HostId#88, Stat=6 
+2015/10/16 20:11:05.957: Start Logout ... 
+2015/10/16 20:11:05.958: TServer Login Status: 0 
+2015/10/16 20:11:05.959: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 20:11:05.960: TServer Login Status: 1 
+2015/10/16 20:11:06.048: TServer Login Status: 2 
+2015/10/16 20:11:06.050: TServer Login Status: 4 
+2015/10/16 20:11:06.050: Logging in ... 
+2015/10/16 20:11:06.050: PServer Login Status: HostId#83, Stat=7 
+2015/10/16 20:11:06.056: PServer Login Status: HostId#87, Stat=7 
+2015/10/16 20:11:06.056: PServer Login Status: HostId#88, Stat=7 
+2015/10/16 20:11:06.077: TServer Login Status: 5 
+2015/10/16 20:11:06.078: Login OK (Host:)! 
+2015/10/16 20:11:06.079: Account OK! 
+2015/10/16 20:11:06.133: PServer Login Status: HostId#83, Stat=0 
+2015/10/16 20:11:06.135: PServer Login Status: HostId#87, Stat=0 
+2015/10/16 20:11:06.138: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 20:11:06.271: Load Data End: acc:, mask:128 
+2015/10/16 20:11:07.333: Load Data End: acc:FSF01, mask:64 
+2015/10/16 20:11:07.390: Load Data End: acc:FSF01, mask:2 
+2015/10/16 20:11:07.405: Load Data End: acc:FSF01, mask:4 
+2015/10/16 20:11:07.421: Load Data End: acc:FSF01, mask:8 
+2015/10/16 20:11:07.436: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 20:11:10.765: Load Data End: acc:FSF01, mask:2 
+2015/10/16 20:11:10.811: Load Data End: acc:FSF01, mask:4 
+2015/10/16 20:11:10.827: Load Data End: acc:FSF01, mask:8 
+2015/10/16 20:11:14.436: Load Data End: acc:FSF01, mask:2 
+2015/10/16 20:11:14.454: Load Data End: acc:FSF01, mask:4 
+2015/10/16 20:11:14.467: Load Data End: acc:FSF01, mask:8 
+2015/10/16 22:15:34.875: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 22:15:34.875: TServer Login Status: 1 
+2015/10/16 22:15:35.258: TServer Login Status: 2 
+2015/10/16 22:15:35.259: TServer Login Status: 4 
+2015/10/16 22:15:35.259: Logging in ... 
+2015/10/16 22:15:35.305: PServer Login Status: HostId#83, Stat=11 
+2015/10/16 22:15:35.307: PServer Login Status: HostId#87, Stat=11 
+2015/10/16 22:15:35.308: PServer Login Status: HostId#88, Stat=11 
+2015/10/16 22:15:35.308: TServer Login Status: 5 
+2015/10/16 22:15:35.309: Login OK (Host:4ùn)! 
+2015/10/16 22:15:35.313: Account OK! 
+2015/10/16 22:15:35.878: Load Data End: acc:, mask:128 
+2015/10/16 22:15:37.867: Load Data End: acc:FSF01, mask:64 
+2015/10/16 22:15:37.945: Load Data End: acc:FSF01, mask:2 
+2015/10/16 22:15:37.961: Load Data End: acc:FSF01, mask:4 
+2015/10/16 22:15:37.976: Load Data End: acc:FSF01, mask:8 
+2015/10/16 22:15:37.992: PServer Login Status: HostId#83, Stat=1 
+2015/10/16 22:15:38.008: PServer Login Status: HostId#87, Stat=1 
+2015/10/16 22:15:38.024: PServer Login Status: HostId#88, Stat=1 
+2015/10/16 22:15:38.039: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 22:15:38.164: PServer Login Status: HostId#83, Stat=4 
+2015/10/16 22:15:38.180: PServer Login Status: HostId#87, Stat=4 
+2015/10/16 22:15:38.181: PServer Login Status: HostId#88, Stat=4 
+2015/10/16 22:15:38.445: PServer Login Status: HostId#83, Stat=5 
+2015/10/16 22:15:38.459: PServer Login Status: HostId#87, Stat=5 
+2015/10/16 22:15:38.492: PServer Login Status: HostId#88, Stat=5 
+2015/10/16 23:12:44.140: PServer Login Status: HostId#83, Stat=6 
+2015/10/16 23:12:44.141: PServer Login Status: HostId#87, Stat=6 
+2015/10/16 23:12:44.143: PServer Login Status: HostId#88, Stat=6 
+2015/10/16 23:12:44.144: Start Logout ... 
+2015/10/16 23:12:44.145: TServer Login Status: 0 
+2015/10/16 23:12:44.148: Start Connect (Host: 10.68.89.2:8080)... 
+2015/10/16 23:12:44.149: TServer Login Status: 1 
+2015/10/16 23:12:44.315: TServer Login Status: 2 
+2015/10/16 23:12:44.377: TServer Login Status: 4 
+2015/10/16 23:12:44.391: Logging in ... 
+2015/10/16 23:12:44.405: PServer Login Status: HostId#83, Stat=7 
+2015/10/16 23:12:44.408: PServer Login Status: HostId#87, Stat=7 
+2015/10/16 23:12:44.408: PServer Login Status: HostId#88, Stat=7 
+2015/10/16 23:12:44.409: TServer Login Status: 5 
+2015/10/16 23:12:44.409: Login OK (Host:$Çlùn é’|`)! 
+2015/10/16 23:12:44.413: Account OK! 
+2015/10/16 23:12:44.629: PServer Login Status: HostId#83, Stat=0 
+2015/10/16 23:12:44.630: PServer Login Status: HostId#88, Stat=0 
+2015/10/16 23:12:44.641: PServer Login Status: HostId#87, Stat=0 
+2015/10/16 23:12:45.124: Load Data End: acc:, mask:128 
+2015/10/16 23:12:47.186: Load Data End: acc:FSF01, mask:64 
+2015/10/16 23:12:47.264: Load Data End: acc:FSF01, mask:2 
+2015/10/16 23:12:47.280: Load Data End: acc:FSF01, mask:4 
+2015/10/16 23:12:47.296: Load Data End: acc:FSF01, mask:8 
+2015/10/16 23:12:47.311: Load Data Reply: acc:FSF01, mask:256, return:0 
+2015/10/16 23:12:49.014: Load Data End: acc:FSF01, mask:2 
+2015/10/16 23:12:49.030: Load Data End: acc:FSF01, mask:4 
+2015/10/16 23:12:49.045: Load Data End: acc:FSF01, mask:8 
+2015/10/16 23:12:51.748: Load Data End: acc:FSF01, mask:2 
+2015/10/16 23:12:51.765: Load Data End: acc:FSF01, mask:4 
+2015/10/16 23:12:51.796: Load Data End: acc:FSF01, mask:8 
