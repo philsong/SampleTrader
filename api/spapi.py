@@ -581,8 +581,7 @@ class APIServerThread(threading.Thread):
         Tsender.connect("inproc://ticker")
         Psender = context.socket(zmq.PAIR)
         Psender.connect("inproc://price") 
-        mySPAPI =  spapi() 
-        self.mySPAPI =  mySPAPI
+        self.mySPAPI = spapi()
         #self.zs = ZmqServerThread(self.mySPAPI)
         self.SP_Server = ZoeServerSocket['SPServerIP']
         self.APILogin()
@@ -616,12 +615,8 @@ class APIServerThread(threading.Thread):
                             # self.mySPAPI.SubscribeTickers(Contracts)
                             # xyzhu test
                             # for Contract in Contracts:
-
-                            cmd = SPCommObject()
-                            cmd.CmdData = '5107,0,HSIH0,0'
-
                             # xyzhu test
-                            zoePrint(Contracts)
+                            #zoePrint(Contracts)
                             self.mySPAPI.getInstrumentList()
                             tickSC = True
             time.sleep(1)
@@ -644,36 +639,18 @@ class APIServerThread(threading.Thread):
             socks = dict(poller.poll())
             if socks.get(m1) == zmq.POLLIN:
                 try:
-                    _messages=[]
-                    _message = m1.recv_multipart()
-                    zoePrint(_message)
-                    if len(_message)>1:
-
-                        MsgID=_message[0]
-                        MsgFields = _message[1].split(",")
-                        if MsgFields=='9000': #MSGID_TICKER_REQ (5107) #<MessageId>,<MessageType>,<ProductId>
-                            if MsgList[1]=='0':
-                                self.mySPAPI.SPAPI_SubscribeTicker(MsgFields[2],1)
-                        if MsgFields=='9001': #MSGID_TICKER_REQ (5107) #<MessageId>,<MessageType>,<ProductId>
-                            if MsgList[1]=='0':
-                                self.mySPAPI.SPAPI_SubscribeTicker(MsgFields[2],1)
-                        if MsgFields=='5107': #MSGID_TICKER_REQ (5107) #<MessageId>,<MessageType>,<ProductId>
-                            if MsgList[1]=='0':
-                                self.mySPAPI.SPAPI_SubscribeTicker(MsgFields[2],1)
-                        if MsgFields=='5108':
-                            if MsgList[1]=='0':
-                                self.mySPAPI.SPAPI_SubscribeTicker(MsgFields[2],0)  
-                        if MsgFields=='4106':  #MSGID_PRC_SNAP_REQ (4106) #<MessageId>,<MessageType>,<ProductId>
-                            if MsgList[1]=='0':
-                                price = SPApiPrice()
-                                ret_code = self.mySPAPI.SPAPI_GetPriceByCode(MsgFields[2], price)  
-                                if (ret_code==0):
-                                    _message=['4106',"4106,3,0"]  
-                                else:
-                                    _message=['4106',"4106,3,%d" % ret_code]                                   
-                                _messages.append(_message)                                                            
-                        for m in _messages:
-                            m1.send_multipart(m)
+                    _message = m1.recv_joan()
+                    _message_reply = ''
+                    #zoePrint(_message)
+                    if len(_message)>35:
+						mySCO = SPCommObject(_message)
+						if mySCO.CmdType == 'CA':
+							mySCP = SPCmdProcess(self.mySPAPI)
+							r_message_reply = mySCP.execute_cmd(mySCO.CmdDataBuf)                                                           
+					if _message_reply:
+						m1.send_joan(_message_reply)
+					else:
+						pass # 处理没有调用返回时如何响应客户端
                 except ValueError ,e:
                     zoePrint( "Error:%s" % e)
                 except Exception , e:
@@ -681,9 +658,9 @@ class APIServerThread(threading.Thread):
                     
             if socks.get(m2) == zmq.POLLIN:
                 try:
-                    _message = m2.recv_multipart()
+                    _message = m2.recv_joan()
                     zoePrint( _message)
-                    m2.send_multipart(_message)
+                    m2.send_joan(_message)
                 except ValueError ,e:
                     zoePrint( "Error:%s" % e)
        
@@ -691,6 +668,21 @@ class APIServerThread(threading.Thread):
         print "Trying to stop APIServer thread "
         self.zs.stop()
         self.run = False
+
+class SPCmdProcess(object):
+	spCmd = None
+	spCmdReply = None
+	def __init__(self,api):
+		self.spApi = api
+		self.spCmd = Zoemds.SPCmd(api)
+		self.spCmdReply = SPCmdReplyBase(api)
+		
+	def execute_cmd(self,cmdStr):		
+	    self.spCmd.execute_cmd(cmdStr)
+	    return self.spCmdReply(self.spCmd.MessageId,self.spCmd._fields)
+
+	    
+
 
 
 if __name__ == '__main__': 

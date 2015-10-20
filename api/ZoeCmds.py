@@ -1,16 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-from spapi import *
-from spapi import *
+import ZoeDef
+import struct
 
 class SPCmdBase(object): #用于定义 SP 命令
     def __init__(self,api):
         self.spApi = api
-        # if (cmdStr):
-        #     self.cmdStr=cmdStr
-        #     self._cv = cmdStr.split(',')
-        #     self.MessageId = self._cv[0]
             
     def __call__(self,cmdStr):
         self.cmdStr=cmdStr
@@ -61,7 +57,7 @@ class SPCmdBase(object): #用于定义 SP 命令
         elif (self.MessageId == '9181'):
             return '9181', self.parse_cmd_9181(self.cmdStr)
         else:
-            return '0', None
+            return None, None
 
     def _splitCmd(self,cmdStr,Header):
         _ch = Header
@@ -244,18 +240,70 @@ class SPCmdBase(object): #用于定义 SP 命令
 
     # xyzhu add 2015-10-15
 
-class SPCommObject(object): #用于定义zmq中传输的内容
-    CmdType = '',  # 'spAPISocket', 'spNativeAPI','DBcmd',etc
-    SrcStationID = '',
-    DstStationID = '',
-    ServiceID = 0,
-    SerieslNo = 0,
-    PktLen = 0,
-    ZipFlag = 0
-    CmdData = None
-    def __init__(self):
-        pass
+class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 2015.10.21
+    CmdType = 'CA' # 'CA' = spAPISocket, 'CB' = spNativeAPI,'CC'= DBcmd,etc
+    SrcStationID = 0	# 原站号
+    DstStationID = 0   # 目标站号
+    ServiceID = 0		# 服务注册号，用于并行服务分配用
+    SerieslNo = 0		# 命令的序列号
+    _PktLen = 0			# 全包长
+    _ZipFlag = 0		# 是否压缩包体？ 0=False 1=True
+    
+    CmdDataBuf = ''      # 包体：全包长 - 8 - 头长
+    HeadDataBuf = ''	 # 包头
+    MAC = ''				# CRC 校验 取为全包长-8字节
+    
+    def __init__(self,buf = None):
+		if buf:
+			self.unpack(buf)
+    
+    @property
+    def PktLen(self):
+        return 35+8+len(self.CmdDataBuf)    
+    
+    @property
+    def ZipFlag(self):
+        return self._ZipFlag
+    @ZipFlag.setter
+    def ZipFlag(self,value):
+        self._ZipFlag = 1 if value else 0
+    
+    
+    def __calculateMAC(self):
+		if (not HeadDataBuf):
+			self.__packHead()
+		buf = self.HeadDataBuf+self.CmdDataBuf
+		pass # 这里计算8位的检验码
+		self.MAC  = '11111111'		
 
+    def __packHead(self):
+		self.HeadDataBuf = struct.pack('2s 4s 4s 4s 16s 4s 1s',  # 头定长 35字节 
+					self.CmdType,
+					self.SrcStationID,
+					self.DstStationID,
+					self.ServiceID,
+					self.SerieslNo,
+					self.PktLen,
+					self.ZipFlag)
+	def pack(self):
+		if (not self.MAC):
+			self.__calculateMAC()
+		return self.HeadDataBuf+self.CmdDataBuf+self.MAC
+		
+	def __unpackHead(self)
+		self.CmdType,self.SrcStationID,self.DstStationID,self.ServiceID,self.SerieslNo,self.PktLen,self.ZipFlag = struct.unpack('2s 4s 4s 4s 16s 4s 1s',self.HeadDataBuf)
+	
+	def unpack(self,buf):
+		if len(buf) < 35+8:
+			raise RuntimeError('Packet is too short!')
+		self.HeadDataBuf = buf[:35]
+		self.MAC = buf[-8:]
+		self.CmdDataBuf = buf[35:-8]
+		self.__unpackHead()
+		
+
+		
+		
 class SPCmd(SPCmdBase): #用于定义 SP 命令
     # def __int__(self,api):
     #     self.spApi = api
@@ -287,39 +335,42 @@ class SPCmd(SPCmdBase): #用于定义 SP 命令
 
     def execute_cmd(self, cmdStr):
         _cmd = self.__call__(cmdStr)
-        MessageId = _cmd[0]
+        self.MessageId = _cmd[0]
         _fields = _cmd[1]
-        # print _fields['ProductId']
+        # print self._fields['ProductId']
 
-        if MessageId == '5107':
-            return self.spApi.SubscribeTicker(_fields['ProductId'], 1)
-        elif MessageId == '5108':
-            return self.spApi.SubscribeTicker(_fields['ProductId'], 0)
-        elif MessageId == '9011':
+        if self.MessageId == '5107':
+            returnCode = self.spApi.SubscribeTicker(self._fields['ProductId'], 1)
+            self._fields['ReturnCode'] = returnCode       #  在此处填写RecodeCode及其它需要返回的内容
+            return returnCode
+            
+        elif self.MessageId == '5108':
+            return self.spApi.SubscribeTicker(self._fields['ProductId'], 0)
+        elif self.MessageId == '9011':
             return
-        elif MessageId == '9012':
+        elif self.MessageId == '9012':
             return
-        elif MessageId == '9013':
-            return self.spApi.SPAPI_GetLoginStatus(_fields['LinkId'])
-        elif MessageId == '4106':
+        elif self.MessageId == '9013':
+            return self.spApi.SPAPI_GetLoginStatus(self._fields['LinkId'])
+        elif self.MessageId == '4106':
             return
-        elif MessageId == '4107':
-            return self.spApi.SPAPI_SubscribePrice(_fields['ProductId'], 1)
-        elif MessageId == '4102':
+        elif self.MessageId == '4107':
+            return self.spApi.SPAPI_SubscribePrice(self._fields['ProductId'], 1)
+        elif self.MessageId == '4102':
             return
-        elif MessageId == '4108':
-            return self.spApi.SPAPI_SubscribePrice(_fields['ProductId'], 0)
-        elif MessageId == '3101':
+        elif self.MessageId == '4108':
+            return self.spApi.SPAPI_SubscribePrice(self._fields['ProductId'], 0)
+        elif self.MessageId == '3101':
             return
-        elif MessageId == '3102':
+        elif self.MessageId == '3102':
             return
-        elif MessageId == '3121':
-            return self.spApi.SPAPI_AccountLogin(_fields['AccNo'])
-        elif MessageId == '3122':
-            return self.spApi.SPAPI_AccountLogout(_fields['AccNo'])
-        elif MessageId == '3103':
-            action = _fields['Action']
-            order = self.form_order(_fields)
+        elif self.MessageId == '3121':
+            return self.spApi.SPAPI_AccountLogin(self._fields['AccNo'])
+        elif self.MessageId == '3122':
+            return self.spApi.SPAPI_AccountLogout(self._fields['AccNo'])
+        elif self.MessageId == '3103':
+            action = self._fields['Action']
+            order = self.form_order(self._fields)
             if action == '1':
                 return self.spApi.SPAPI_AddOrder(order)
             elif action == '2':
@@ -332,21 +383,21 @@ class SPCmd(SPCmdBase): #用于定义 SP 命令
                 return self.spApi.SPAPI_ActivateOrder(order)
             elif action == '9':
                 return self.spApi.SPAPI_InactivateOrder(order)
-        elif MessageId == '3186':
+        elif self.MessageId == '3186':
             return
-        elif MessageId == '3181':
+        elif self.MessageId == '3181':
             return
-        elif MessageId == '3187':
+        elif self.MessageId == '3187':
             return
-        elif MessageId == '9109':
+        elif self.MessageId == '9109':
             return
-        elif MessageId == '9086':
+        elif self.MessageId == '9086':
             return
-        elif MessageId == '9186':
+        elif self.MessageId == '9186':
             return
-        elif MessageId == '9081':
+        elif self.MessageId == '9081':
             return
-        elif MessageId == '9181':
+        elif self.MessageId == '9181':
             return
 
 
@@ -354,13 +405,9 @@ class SPCmd(SPCmdBase): #用于定义 SP 命令
 class SPCmdReplyBase(object): #用于定义 SP reply
     def __init__(self,api):
         self.spApi = api
-        # if (cmdStr):
-        #     self.cmdStr=cmdStr
-        #     self._cv = cmdStr.split(',')
-        #     self.MessageId = self._cv[0]
     def _packaging(self,fields,header):
         _v = [fields[i] for i in header]
-        _v = [str(i) for i in _v]
+        _v = map(lambda x:str(x) if x else '',_v)
         replyStr = ','.join(_v)
         return replyStr+'\t\n'
         
@@ -690,8 +737,8 @@ if __name__ == '__main__':
     #
     # c = cmd('3121,0,1000,0')
     # print c
-
-    mySPAPI = spapi()
+	import spapi
+    mySPAPI = spapi.spapi()
     cmd = SPCmd(mySPAPI)
     cmd.execute_cmd('5107,0,HSIH0,0')
 
