@@ -85,7 +85,7 @@ class spapi():
     def __init__( self, dllfilename=None ):
         if (not dllfilename):
             if u'32bit' in architecture():
-                dllfilename = u'spapidll.dll'
+                dllfilename = u'spapidll32.dll'
             else:
                 dllfilename = u'spapidll64.dll'
             if (not exists(dllfilename)):
