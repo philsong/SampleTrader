@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-from spapi import spapi
-from spapi import SPApiOrder
+from spapi import *
+from spapi import *
 
 class SPCmdBase(object): #用于定义 SP 命令
     def __init__(self,api):
@@ -366,13 +366,305 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         
     def __call__(self,MessageId,**vks):
         replyStr=''
-        if (MessageId == '3103'): 
-            replyStr =  self.generating_9011_reply(MessageId,vks)
-        elif (MessageId == '3109'):
-            pass
+        if (MessageId == '3103'):
+            replyStr = self.generating_3103_reply(MessageId,vks)
+        elif (MessageId == '3121'):
+            replyStr = self.generating_3121_reply(MessageId,vks)
+        elif (MessageId == '3122'):
+            replyStr = self.generating_3122_reply(MessageId,vks)
+        # elif (MessageId == '3109'):
+        #     replyStr = self.generating_3109_reply(MessageId,vks)
+        # elif (MessageId == '3119'):
+        #     replyStr = self.generating_3119_reply(MessageId,vks)
+        elif (MessageId == '3187'):
+            replyStr = self.generating_3187_reply(MessageId,vks)
+        # elif (MessageId == '9901'):
+        #     replyStr = self.generating_9901_reply(MessageId,vks)
+        # elif (MessageId == '9003'):
+        #     replyStr = self.generating_9003_reply(MessageId,vks)
+        # elif (MessageId == '9014'):
+        #     replyStr = self.generating_9014_reply(MessageId,vks)
+        # elif (MessageId == '9902'):
+        #     replyStr = self.generating_9902_reply(MessageId,vks)
+        elif (MessageId == '5107'):
+            replyStr = self.generating_5107_reply(MessageId,vks)
+        # elif (MessageId == '5102'):
+        #     replyStr = self.generating_5102_reply(MessageId,vks)
+        # elif (MessageId == '5103'):
+        #     replyStr = self.generating_5103_reply(MessageId,vks)
+        elif (MessageId == '5108'):
+            replyStr = self.generating_5108_reply(MessageId,vks)
+        elif (MessageId == '4106'):
+            replyStr = self.generating_4106_reply(MessageId,vks)
+        elif (MessageId == '4107'):
+            replyStr = self.generating_4107_reply(MessageId,vks)
+        elif (MessageId == '4102'):
+            replyStr = self.generating_4102_reply(MessageId,vks)
+        elif (MessageId == '4108'):
+            replyStr = self.generating_4108_reply(MessageId,vks)
         return replyStr
      
-    def generating_9011_reply(MessageId,**vks):
+    def generating_4108_reply(self,MessageId,**vks):
+        # <MessageId>,<MessageType>,<ReturnCode><cr><lf>
+        # Example: 4108,3,0<cr><lf>
+        header = ('MessageId','MessageType','ReturnCode')
+        _fields=vks
+        _fields['ReturnCode']=vks['ReturnCode']
+        return self._packaging(_fields,header)
+
+    def generating_4102_reply(self,MessageId,**vks):
+        # <MessageId>,<MessageType>,<ProductId>,<ProductName>,<ProductType>,<ContractSize>,
+        # <ExpiryDate>,<InstrumentCode>,<Currency>,<Strike>,<CallPut>,<Underlying>,<BidPrice1>,
+        # <BidQty1>,<BidPrice2>,<BidQty2>,<BidPrice3>,<BidQty3>,<BidPrice4>,<BidQty4>,<BidPrice5>,
+        # <BidQty5>,<AskPrice1>,<AskQty1>,<AskPrice2>,<AskQty2>,<AskPrice3>,<AskQty3>,<AskPrice4>,
+        # <AskQty4>,<AskPrice5>,<AskQty5>,<LastPrice1>,<LastQty1>,<LastPrice2>,<LastQty2>,<LastPrice3>,
+        # <LastQty3>,<LastPrice4>,<LastQty4>,<LastPrice5>,<LastQty5>,<OpenInterest>,<TurnoverAmount>,
+        # <TurnoverVolume>,<TickerHigh>,<TickerLow>,<EquilibriumPrice>,<Open>,<High>,<Low>,<PreviousClose>,
+        # <PreviousCloseDate>,<TradeStatus>,<TradeStateNo><cr><lf>
+        header = ('MessageId','MessageType','ProductId','ProductName','ProductType','ContractSize',
+                  'ExpiryDate','InstrumentCode','Currency','Strike','CallPut','Underlying','BidPrice1',
+                  'BidQty1','BidPrice2','BidQty2','BidPrice3','BidQty3','BidPrice4','BidQty4','BidPrice5',
+                  'BidQty5','AskPrice1','AskQty1','AskPrice2','AskQty2','AskPrice3','AskQty3','AskPrice4',
+                  'AskQty4','AskPrice5','AskQty5','LastPrice1','LastQty1','LastPrice2','LastQty2','LastPrice3',
+                  'LastQty3','LastPrice4','LastQty4','LastPrice5','LastQty5','OpenInterest','TurnoverAmount',
+                  'TurnoverVolume','TickerHigh','TickerLow','EquilibriumPrice','Open','High','Low','PreviousClose',
+                  'PreviousCloseDate','TradeStatus','TradeStateNo')
+        _fields=vks
+        _fields['ProductName']=vks['ProductName']
+        _fields['ProductType']=vks['ProductType']
+        _fields['ContractSize']=vks['ContractSize']
+        _fields['InstrumentCode']=vks['InstrumentCode']
+        _fields['Currency']=vks['Currency']
+        _fields['Strike']=vks['Strike']
+        _fields['CallPut']=vks['CallPut']
+        _fields['Underlying']=vks['Underlying']
+        _fields['BidPrice1']=vks['BidPrice1']
+        _fields['BidQty1']=vks['BidQty1']
+        _fields['BidPrice2']=vks['BidPrice2']
+        _fields['BidQty2']=vks['BidQty2']
+        _fields['BidPrice3']=vks['BidPrice3']
+        _fields['BidQty3']=vks['BidQty3']
+        _fields['BidPrice4']=vks['BidPrice4']
+        _fields['BidQty4']=vks['BidQty4']
+        _fields['BidPrice5']=vks['BidPrice5']
+        _fields['BidQty5']=vks['BidQty5']
+        _fields['AskPrice1']=vks['AskPrice1']
+        _fields['AskQty1']=vks['AskQty1']
+        _fields['AskPrice2']=vks['AskPrice2']
+        _fields['AskQty2']=vks['AskQty2']
+        _fields['AskPrice3']=vks['AskPrice3']
+        _fields['AskQty3']=vks['AskQty3']
+        _fields['AskPrice4']=vks['AskPrice4']
+        _fields['AskQty4']=vks['AskQty4']
+        _fields['AskPrice5']=vks['AskPrice5']
+        _fields['AskQty5']=vks['AskQty5']
+        _fields['LastPrice1']=vks['LastPrice1']
+        _fields['LastQty1']=vks['LastQty1']
+        _fields['LastPrice2']=vks['LastPrice2']
+        _fields['LastQty2']=vks['LastQty2']
+        _fields['LastPrice3']=vks['LastPrice3']
+        _fields['LastQty3']=vks['LastQty3']
+        _fields['LastPrice4']=vks['LastPrice4']
+        _fields['LastQty4']=vks['LastQty4']
+        _fields['LastPrice5']=vks['LastPrice5']
+        _fields['LastQty5']=vks['LastQty5']
+        _fields['OpenInterest']=vks['OpenInterest']
+        _fields['TurnoverAmount']=vks['TurnoverAmount']
+        _fields['TurnoverVolume']=vks['TurnoverVolume']
+        _fields['TickerHigh']=vks['TickerHigh']
+        _fields['TickerLow']=vks['TickerLow']
+        _fields['EquilibriumPrice']=vks['EquilibriumPrice']
+        _fields['Open']=vks['Open']
+        _fields['High']=vks['High']
+        _fields['Low']=vks['Low']
+        _fields['PreviousClose']=vks['PreviousClose']
+        _fields['TradeStatus']=vks['TradeStatus']
+        _fields['TradeStateNo']=vks['TradeStateNo']
+        return self._packaging(_fields,header)
+
+    def generating_4107_reply(self,MessageId,**vks):
+        # <MessageId>,<MessageType>,<ReturnCode><cr><lf>
+        # Example: 4107,3,0<cr><lf>
+        header = ('MessageId','MessageType','ReturnCode')
+        _fields=vks
+        _fields['ReturnCode']=vks['ReturnCode']
+        return self._packaging(_fields,header)
+
+    def generating_4106_reply(self,MessageId,**vks):
+        # <MessageId>,<MessageType>,<ReturnCode><cr><lf>
+        # Example: 4106,3,0
+        header = ('MessageId','MessageType','ReturnCode')
+        _fields=vks
+        _fields['ReturnCode']=vks['ReturnCode']
+        return self._packaging(_fields,header)
+
+    def generating_5108_reply(self,MessageId,**vks):
+        # <MessageId>,<MessageType>,<ProductId><cr><lf>
+        # Example: 5108,3,0, HSIH0
+        header = ('MessageId','MessageType','ProductId')
+        _fields=vks
+        return self._packaging(_fields,header)
+
+    # def generating_5103_reply(self,MessageId,**vks):
+    #     # <MessageId>,<MessageType>,<ProductId>,<Price>,<Qty>,<Time>,<DealSrc><cr><lf>
+    #     # Example: 5102, 3,HSIH0,20100,1,1150905600
+    #     # DealSrc: This field only exists when MessageId is 5103
+    #     # 1 – Normal , 5 – Cross, 7 – Stdc, 20 - Auction
+    #     header = ('MessageId','MessageType','ProductId','Price','Qty','Time','DealSrc')
+    #     _fields['ProductId']=vks['ProductId']
+    #     _fields['Price']=vks['Price']
+    #     _fields['Qty']=vks['Qty']
+    #     _fields['Time']=vks['Time']
+    #     _fields['DealSrc']=vks['DealSrc']
+    #     return self._packaging(_fields,header)
+    #
+    # def generating_5102_reply(self,MessageId,**vks):
+    #     # <MessageId>,<MessageType>,<ProductId>,<Price>,<Qty>,<Time>,<DealSrc><cr><lf>
+    #     # Example: 5102, 3,HSIH0,20100,1,1150905600
+    #     # DealSrc: This field only exists when MessageId is 5103
+    #     # 1 – Normal , 5 – Cross, 7 – Stdc, 20 - Auction
+    #     header = ('MessageId','MessageType','ProductId','Price','Qty','Time')
+    #     _fields['ProductId']=vks['ProductId']
+    #     _fields['Price']=vks['Price']
+    #     _fields['Qty']=vks['Qty']
+    #     _fields['Time']=vks['Time']
+    #     return self._packaging(_fields,header)
+
+    def generating_5107_reply(self,MessageId,**vks):
+        # <MessageId>,<MessageType>,<ReturnCode>,<ProductId>,<Options><cr><lf>
+        header = ('MessageId','MessageType','ReturnCode','ProductId','Options')
+        _fields=vks
+        _fields['ReturnCode']=vks['ReturnCode']
+        return self._packaging(_fields,header)
+
+    # def generating_9902_reply(self,MessageId,**vks):
+    #     # <MessageId>,< MessageType>,<AccNo>,<BuyingPower>,<cr><lf>
+    #     header = ('MessageId','MessageType','AccNo','BuyingPower')
+    #     _fields['AccNo']=vks['AccNo']
+    #     _fields['BuyingPower']=vks['BuyingPower']
+    #     return self._packaging(_fields,header)
+
+    # def generating_9014_reply(self,MessageId,**vks):
+    #     # <MessageId>,<MessageType>,<LinkId>,<Status><cr><lf>
+    #     header = ('MessageId','MessageType','LinkId','Status')
+    #     _fields['LinkId']=vks['LinkId']
+    #     _fields['Status']=vks['Status']
+    #     return self._packaging(_fields,header)
+
+    # def generating_9003_reply(self,MessageId,**vks):
+    #     # <MessageId>,<MessageType>,<AccNo>,<Ready><cr><lf>
+    #     # Example: 9003,0,ACC1000,1
+    #     header = ('MessageId','MessageType','AccNo','Ready')
+    #     _fields['AccNo']=vks['AccNo']
+    #     _fields['Ready']=vks['Ready']
+    #     return self._packaging(_fields,header)
+
+    # def generating_9901_reply(self,MessageId,**vks):
+    #     # <MessageId>,<MessageType>,<AccNo>,<ProductId>,<preqty>,<preavg>,<longqty>,<longavg>,
+    #     # <shortqty>,<shortavg>,<netqty>,<netavg><cr><lf>
+    #     header = ('MessageId','MessageType','AccNo','ProductId','preqty','preavg','longqty','longavg',
+    #               'shortqty','shortavg','netqty','netavg')
+    #     _fields['AccNo']=vks['AccNo']
+    #     _fields['ProductId']=vks['ProductId']
+    #     _fields['preqty']=vks['preqty']
+    #     _fields['preavg']=vks['preavg']
+    #     _fields['longqty']=vks['longqty']
+    #     _fields['longavg']=vks['longavg']
+    #     _fields['shortqty']=vks['shortqty']
+    #     _fields['shortavg']=vks['shortavg']
+    #     _fields['netqty']=vks['netqty']
+    #     _fields['netavg']=vks['netavg']
+    #     return self._packaging(_fields,header)
+
+    def generating_3187_reply(self,MessageId,**vks):
+        # <MessageId>,<MessageType>,<DataMask>,<AccNo>,<DataCount><ReturnCode><cr><lf>
+        header = ('MessageId','MessageType','DataMask','AccNo','DataCount')
+        _fields=vks
+        _fields['AccNo']=vks['AccNo']
+        _fields['DataCount']=vks['DataCount']
+        return self._packaging(_fields,header)
+
+    # def generating_3119_reply(self,MessageId,**vks):
+    #     # <MessageId>,<MessageType>,<Status>,<AccNo>,<IntOrderNo>,<ProductId>,<BuySell>,<Price>,
+    #     # <Qty>,<OpenClose>,<OrderType>,<ValidType>,<ValidTime>,<Ref>,<TPlus1>,<Initiator>,<TradedQty>,
+    #     # <Ref2>,<CondType>,<StopType>,<StopPrice>,<SchedTime>,<UpLevel>,<UpPrice>,<DownLevel>,<DownPrice><cr><lf>
+    #     header = ('MessageId','MessageType','Status','AccNo','IntOrderNo','ProductId','BuySell','Price','Qty',
+    #               'OpenClose','OrderType','ValidType','ValidTime','Ref','TPlus1','Initiator','TradedQty',
+    #               'Ref2','CondType','StopType','StopPrice','SchedTime','UpLevel','UpPrice','DownLevel','DownPrice')
+    #     _fields['Status']=vks['Status']
+    #     _fields['AccNo']=vks['AccNo']
+    #     _fields['IntOrderNo']=vks['IntOrderNo']
+    #     _fields['ProductId']=vks['ProductId']
+    #     _fields['BuySell']=vks['BuySell']
+    #     _fields['Price']=vks['Price']
+    #     _fields['Qty']=vks['Qty']
+    #     _fields['OpenClose']=vks['OpenClose']
+    #     _fields['OrderType']=vks['OrderType']
+    #     _fields['ValidType']=vks['ValidType']
+    #     _fields['ValidTime']=vks['ValidTime']
+    #     _fields['Ref']=vks['Ref']
+    #     _fields['TPlus1']=vks['TPlus1']
+    #     _fields['Initiator']=vks['Initiator']
+    #     _fields['TradedQty']=vks['TradedQty']
+    #     _fields['Ref2']=vks['Ref2']
+    #     _fields['CondType']=vks['CondType']
+    #     _fields['StopType']=vks['StopType']
+    #     _fields['StopPrice']=vks['StopPrice']
+    #     _fields['SchedTime']=vks['SchedTime']
+    #     _fields['UpLevel']=vks['UpLevel']
+    #     _fields['UpPrice']=vks['UpPrice']
+    #     _fields['DownLevel']=vks['DownLevel']
+    #     _fields['DownPrice']=vks['DownPrice']
+    #     return self._packaging(_fields,header)
+
+    # def generating_3109_reply(self,MessageId,**vks):
+    #     # <MessageId>,<MessageType>,<RecNo>,<AccNo>,<IntOrderNo>,<ProductId>,<BuySell>,<Price>,
+    #     # <Qty>,<OpenClose>,<Ref>,<Ref2>,<DealSrc>,<TradeNo>,<Status>,<NetPos>,<LogTime>,<TotalQty>,
+    #     # <RemainQty>,<TradedQty><cr><lf>
+    #     header = ('MessageId','MessageType','RecNo','AccNo','IntOrderNo','ProductId','BuySell','Price','Qty',
+    #               'OpenClose','Ref','Ref2','DealSrc','TradeNo','Status','NetPos','LogTime','TotalQty','RemainQty','TradedQty')
+    #     _fields['RecNo']=vks['RecNo']
+    #     _fields['AccNo']=vks['AccNo']
+    #     _fields['IntOrderNo']=vks['IntOrderNo']
+    #     _fields['ProductId']=vks['ProductId']
+    #     _fields['BuySell']=vks['BuySell']
+    #     _fields['Price']=vks['Price']
+    #     _fields['Qty']=vks['Qty']
+    #     _fields['OpenClose']=vks['OpenClose']
+    #     _fields['Ref']=vks['Ref']
+    #     _fields['Ref2']=vks['Ref2']
+    #     _fields['DealSrc']=vks['DealSrc']
+    #     _fields['TradeNo']=vks['TradeNo']
+    #     _fields['Status']=vks['Status']
+    #     _fields['NetPos']=vks['NetPos']
+    #     _fields['LogTime']=vks['LogTime']
+    #     _fields['TotalQty']=vks['TotalQty']
+    #     _fields['RemainQty']=vks['RemainQty']
+    #     _fields['TradedQty']=vks['TradedQty']
+    #     return self._packaging(_fields,header)
+
+    def generating_3122_reply(self,MessageId,**vks):
+        # <MessageId>,<MessageType>,<ReturnCode>,<UserId>,<AccNo>,<ReturnMessage><cr><lf>
+        # e.g. 3122,3,0,D1,1000,OK
+        header = ('MessageId','MessageType','ReturnCode','UserId','AccNo','ReturnMessage')
+        _fields = vks
+        _fields['ReturnCode']=vks['ReturnCode']
+        _fields['UserId']=vks['UserId']
+        _fields['ReturnMessage']=vks['ReturnMessage']
+        return self._packaging(_fields,header)
+
+    def generating_3121_reply(self,MessageId,**vks):
+        # MSGTYPE_REPLY (From Server to Client) <<<<<<
+        # <MessageId>,<MessageType>,<ReturnCode>,<UserId>,<AccNo>,<ReturnMessage><cr><lf>
+        # e.g. 3121,3,0,D1,1000,OK
+        header = ('MessageId','MessageType','ReturnCode','UserId','AccNo','ReturnMessage')
+        _fields = vks
+        _fields['ReturnCode']=vks['ReturnCode']
+        _fields['UserId']=vks['UserId']
+        _fields['ReturnMessage']=vks['ReturnMessage']
+        return self._packaging(_fields,header)
+
+    def generating_3103_reply(self,MessageId,**vks):
         #MSGTYPE_REPLY (From Server to Client) <<<<<<
         #<MessageId>,<MessageType>,<ReturnCode>,<ReturnMessage>,<Status>,<Action>,<AccNo>,
         #<IntOrderNo>,<ProductId>,<BuySell>,<Price>,<Qty>,<OpenClose>,<OrderType>,<ValidType>,<ValidTime>,<Ref>,<TPlus1>,<Initiator>,<ClientOrderId>,<TradedQty>,<Ref2>,
@@ -380,7 +672,13 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         header = ('MessageId','MessageType','ReturnCode','ReturnMessage','Status','Action','AccNo',
             'IntOrderNo','ProductId','BuySell','Price','Qty','OpenClose','OrderType','ValidType','ValidTime','Ref','TPlus1','Initiator','ClientOrderId','TradedQty','Ref2',
             'CondType','StopType','StopPrice','SchedTime','UpLevel','UpPrice','DownLevel','DownPrice')
+        _fields = vks
         _fields['ReturnCode']=vks['ReturnCode']
+        _fields['ReturnMessage']=vks['ReturnMessage']
+        _fields['Status']=vks['Status']
+        _fields['TPlus1']=vks['TPlus1']
+        _fields['Initiator']=vks['Initiator']
+
         return self._packaging(_fields,header)
       
         
