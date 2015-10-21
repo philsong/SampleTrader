@@ -3,6 +3,7 @@
 
 import ZoeDef
 import struct
+import spapi
 
 class SPCmdBase(object): #用于定义 SP 命令
     def __init__(self,api):
@@ -270,7 +271,7 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
     
     
     def __calculateMAC(self):
-		if (not HeadDataBuf):
+		if (not self.HeadDataBuf):
 			self.__packHead()
 		buf = self.HeadDataBuf+self.CmdDataBuf
 		pass # 这里计算8位的检验码
@@ -278,20 +279,21 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
 
     def __packHead(self):
 		self.HeadDataBuf = struct.pack('2s 4s 4s 4s 16s 4s 1s',  # 头定长 35字节 
-					self.CmdType,
-					self.SrcStationID,
-					self.DstStationID,
-					self.ServiceID,
-					self.SerieslNo,
-					self.PktLen,
-					self.ZipFlag)
-	def pack(self):
-		if (not self.MAC):
-			self.__calculateMAC()
-		return self.HeadDataBuf+self.CmdDataBuf+self.MAC
+					str(self.CmdType),
+					str(self.SrcStationID),
+					str(self.DstStationID),
+					str(self.ServiceID),
+					str(self.SerieslNo),
+					str(self.PktLen),
+					str(self.ZipFlag))
+
+    def pack(self):
+        if (not self.MAC):
+		    self.__calculateMAC()
+        return self.HeadDataBuf+self.CmdDataBuf+self.MAC
 		
-	def __unpackHead(self)
-		self.CmdType,self.SrcStationID,self.DstStationID,self.ServiceID,self.SerieslNo,self.PktLen,self.ZipFlag = struct.unpack('2s 4s 4s 4s 16s 4s 1s',self.HeadDataBuf)
+    def __unpackHead(self):
+        self.CmdType,self.SrcStationID,self.DstStationID,self.ServiceID,self.SerieslNo,self.PktLen,self.ZipFlag = struct.unpack('2s 4s 4s 4s 16s 4s 1s',self.HeadDataBuf)
 	
 	def unpack(self,buf):
 		if len(buf) < 35+8:
@@ -336,7 +338,7 @@ class SPCmd(SPCmdBase): #用于定义 SP 命令
     def execute_cmd(self, cmdStr):
         _cmd = self.__call__(cmdStr)
         self.MessageId = _cmd[0]
-        _fields = _cmd[1]
+        self._fields = _cmd[1]
         # print self._fields['ProductId']
 
         if self.MessageId == '5107':
@@ -737,8 +739,9 @@ if __name__ == '__main__':
     #
     # c = cmd('3121,0,1000,0')
     # print c
-	import spapi
+
     mySPAPI = spapi.spapi()
     cmd = SPCmd(mySPAPI)
     cmd.execute_cmd('5107,0,HSIH0,0')
+
 

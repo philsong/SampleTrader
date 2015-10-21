@@ -580,8 +580,9 @@ class APIServerThread(threading.Thread):
         Tsender = context.socket(zmq.PAIR)
         Tsender.connect("inproc://ticker")
         Psender = context.socket(zmq.PAIR)
-        Psender.connect("inproc://price") 
-        self.mySPAPI = spapi()
+        Psender.connect("inproc://price")
+        mySPAPI =  spapi()
+        self.mySPAPI = mySPAPI
         #self.zs = ZmqServerThread(self.mySPAPI)
         self.SP_Server = ZoeServerSocket['SPServerIP']
         self.APILogin()
@@ -641,15 +642,15 @@ class APIServerThread(threading.Thread):
                 try:
                     _message = m1.recv_joan()
                     _message_reply = ''
-                    #zoePrint(_message)
+                    zoePrint(_message)
                     if len(_message)>35:
 						mySCO = SPCommObject(_message)
 						if mySCO.CmdType == 'CA':
 							mySCP = SPCmdProcess(self.mySPAPI)
 							r_message_reply = mySCP.execute_cmd(mySCO.CmdDataBuf)                                                           
-					if _message_reply:
-						m1.send_joan(_message_reply)
-					else:
+                    if _message_reply:
+					    m1.send_joan(_message_reply)
+                    else:
 						pass # 处理没有调用返回时如何响应客户端
                 except ValueError ,e:
                     zoePrint( "Error:%s" % e)
@@ -674,15 +675,12 @@ class SPCmdProcess(object):
 	spCmdReply = None
 	def __init__(self,api):
 		self.spApi = api
-		self.spCmd = Zoemds.SPCmd(api)
+		self.spCmd = ZoeCmds.SPCmd(api)
 		self.spCmdReply = SPCmdReplyBase(api)
 		
 	def execute_cmd(self,cmdStr):		
 	    self.spCmd.execute_cmd(cmdStr)
 	    return self.spCmdReply(self.spCmd.MessageId,self.spCmd._fields)
-
-	    
-
 
 
 if __name__ == '__main__': 
