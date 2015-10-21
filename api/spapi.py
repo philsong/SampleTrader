@@ -10,6 +10,7 @@ import os
 from os.path import exists,join,realpath,curdir
 from platform import architecture
 import logging
+import logging.config
 import thread
 import threading
 import zmq
@@ -20,7 +21,7 @@ import itertools
 import argparse  
 import ZoeCmds
 from ZoeDef import *
-
+from ZoeCmds import *
 
 ZoeServerSocket = {'ZoeDeviceHost':None,'DBsubServerIP':None,'ApiStgRepServerHost':None,'ApiCmdRepServerHost':None,'SPServerIP':None,
                     'DBsubServerPort':forwarder_backend_port,'ApiStgRepServerPort':stg_q_b_port,'ApiCmdRepServerPort':queue_backend_port}
@@ -162,6 +163,11 @@ class spapi():
         self.ChangePassword = self.sp.SPAPI_ChangePassword
         self.AccountLogin = self.sp.SPAPI_AccountLogin
         self.AccountLogout = self.sp.SPAPI_AccountLogout
+        self.SetApiLogPath = self.sp.SPAPI_SetApiLogPath
+        self.SendAccControl = self.sp.SPAPI_SendAccControl
+        self.GetCcyRateCount = self.sp.SPAPI_GetCcyRateCount
+        self.GetCcyRate = self.sp.SPAPI_GetCcyRate
+        self.GetCcyRateByCcy = self.sp.SPAPI_GetCcyRateByCcy
         
     def init_fuctions2(self):
         #self.GetDLLVersion = self.sp.SPAPI_GetDLLVersion
@@ -291,6 +297,21 @@ class spapi():
         self.AccountLogout.restype = c_int
         self.AccountLogout.argtypes = [c_char_p]
 
+        self.SetApiLogPath.restype = c_int
+        self.SetApiLogPath.argtypes = [c_char_p]
+
+        self.SendAccControl.restype = c_int
+        self.SendAccControl.argtypes = [c_char_p,c_char,c_char]
+
+        self.GetCcyRateCount.restype = c_int
+        self.GetCcyRateCount.argtypes = []
+
+        self.GetCcyRate.restype = c_int
+        self.GetCcyRate.argtypes = [c_int, POINTER(SPApiCcyRate)]
+
+        self.GetCcyRateByCcy.restype = c_int
+        self.GetCcyRateByCcy.argtypes = [c_char_p,c_double]
+
     def init_fuctions0(self):
         self.cbLoginReplyAddr = WINFUNCTYPE(None,c_long,c_char_p)(self.LoginReplyAddr.__func__)
         self.cbLogoutReplyAddr = WINFUNCTYPE(None,c_long,c_char_p)(self.LogoutReplyAddr.__func__)
@@ -307,7 +328,7 @@ class spapi():
         #self.cbProductListReplyAddr = WINFUNCTYPE(None,c_bool,c_char_p)(self.ProductListReplyAddr.__func__)
         self.cbPswChangeReplyAddr = WINFUNCTYPE(None,c_long,c_char_p)(self.PswChangeReplyAddr.__func__)
         self.cbProductListByCodeReplyAddr = WINFUNCTYPE(None,c_char_p,c_bool,c_char_p)(self.ProductListByCodeReplyAddr.__func__)
-        
+        self.cbBusinessDateReplyAddr = WINFUNCTYPE(None,c_long)(self.BusinessDateReplyAddr.__func__)
         
     #/*请求方法*/
     def SPAPI_GetDLLVersion(self):
@@ -404,6 +425,16 @@ class spapi():
         return self.AccountLogin(acc_no)
     def SPAPI_AccountLogout(self, acc_no):
         return self.AccountLogout(acc_no)
+    def SPAPI_SetApiLogPath(self, path):
+        return self.SetApiLogPath(path)
+    def SPAPI_SendAccControl(self, acc_no, ctrl_mask, ctrl_level):
+        return self.SendAccControl(acc_no, ctrl_mask, ctrl_level)
+    def SPAPI_GetCcyRateCount(self):
+        return self.GetCcyRateCount()
+    def SPAPI_GetCcyRate(self, idx, ccy_rate):
+        return self.GetCcyRate(idx, ccy_rate)
+    def SPAPI_GetCcyRateByCcy(self, ccy, rate):
+        return self.GetCcyRateByCcy(ccy, rate)
 
     #define SPDLLCALL __stdcall
     #/*回调方法*/
@@ -464,6 +495,10 @@ class spapi():
                 #zoePrint( '        ',product['ProdCode'],product['ProdName'])
                 instrument['ProductList'][product['ProdCode']] = product
         mySPAPI.runStore['InstrumentList'][inst_code] = instrument
+
+    def BusinessDateReplyAddr(business_date):
+        # todo
+        pass
         
     def register_callbacks(self):
         self.sp.SPAPI_RegisterLoginReply(self.cbLoginReplyAddr)
@@ -481,6 +516,7 @@ class spapi():
         self.sp.SPAPI_RegisterInstrumentListReply(self.cbInstrumentListReplyAddr)
         self.sp.SPAPI_RegisterPswChangeReply(self.cbPswChangeReplyAddr)
         self.sp.SPAPI_RegisterProductListByCodeReply(self.cbProductListByCodeReplyAddr)
+        self.sp.SPAPI_RegisterBusinessDateReply(self.cbBusinessDateReplyAddr)
 
     def CheckStatus( self ):
         f81 = self.SPAPI_GetLoginStatus(81)
@@ -544,9 +580,9 @@ class APIServerThread(threading.Thread):
         Tsender = context.socket(zmq.PAIR)
         Tsender.connect("inproc://ticker")
         Psender = context.socket(zmq.PAIR)
-        Psender.connect("inproc://price") 
-        mySPAPI =  spapi() 
-        self.mySPAPI =  mySPAPI
+        Psender.connect("inproc://price")
+        mySPAPI =  spapi()
+        self.mySPAPI = mySPAPI
         #self.zs = ZmqServerThread(self.mySPAPI)
         self.SP_Server = ZoeServerSocket['SPServerIP']
         self.APILogin()
@@ -577,7 +613,11 @@ class APIServerThread(threading.Thread):
                             self.mySPAPI.runStore['InstrumentCount'] = self.mySPAPI.SPAPI_GetInstrumentCount()
                             self.mySPAPI.runStore['ProductCount'] = self.mySPAPI.SPAPI_GetProductCount()
                             zoePrint( "InstrumentCount:%(InstrumentCount)s, ProductCount:%(ProductCount)s" % self.mySPAPI.runStore)
-                            self.mySPAPI.SubscribeTickers(Contracts)
+                            # self.mySPAPI.SubscribeTickers(Contracts)
+                            # xyzhu test
+                            # for Contract in Contracts:
+                            # xyzhu test
+                            #zoePrint(Contracts)
                             self.mySPAPI.getInstrumentList()
                             tickSC = True
             time.sleep(1)
@@ -600,35 +640,18 @@ class APIServerThread(threading.Thread):
             socks = dict(poller.poll())
             if socks.get(m1) == zmq.POLLIN:
                 try:
-                    _messages=[]
-                    _message = m1.recv_multipart()
+                    _message = m1.recv_joan()
+                    _message_reply = ''
                     zoePrint(_message)
-                    if len(_message)>1:
-                        MsgID=_message[0]
-                        MsgFields = _message[1].split(",")
-                        if MsgFields=='9000': #MSGID_TICKER_REQ (5107) #<MessageId>,<MessageType>,<ProductId>
-                            if MsgList[1]=='0':
-                                self.mySPAPI.SPAPI_SubscribeTicker(MsgFields[2],1)
-                        if MsgFields=='9001': #MSGID_TICKER_REQ (5107) #<MessageId>,<MessageType>,<ProductId>
-                            if MsgList[1]=='0':
-                                self.mySPAPI.SPAPI_SubscribeTicker(MsgFields[2],1)
-                        if MsgFields=='5107': #MSGID_TICKER_REQ (5107) #<MessageId>,<MessageType>,<ProductId>
-                            if MsgList[1]=='0':
-                                self.mySPAPI.SPAPI_SubscribeTicker(MsgFields[2],1)
-                        if MsgFields=='5108':
-                            if MsgList[1]=='0':
-                                self.mySPAPI.SPAPI_SubscribeTicker(MsgFields[2],0)  
-                        if MsgFields=='4106':  #MSGID_PRC_SNAP_REQ (4106) #<MessageId>,<MessageType>,<ProductId>
-                            if MsgList[1]=='0':
-                                price = SPApiPrice()
-                                ret_code = self.mySPAPI.SPAPI_GetPriceByCode(MsgFields[2], price)  
-                                if (ret_code==0):
-                                    _message=['4106',"4106,3,0"]  
-                                else:
-                                    _message=['4106',"4106,3,%d" % ret_code]                                   
-                                _messages.append(_message)                                                            
-                        for m in _messages:
-                            m1.send_multipart(m)
+                    if len(_message)>35:
+						mySCO = SPCommObject(_message)
+						if mySCO.CmdType == 'CA':
+							mySCP = SPCmdProcess(self.mySPAPI)
+							r_message_reply = mySCP.execute_cmd(mySCO.CmdDataBuf)                                                           
+                    if _message_reply:
+					    m1.send_joan(_message_reply)
+                    else:
+						pass # 处理没有调用返回时如何响应客户端
                 except ValueError ,e:
                     zoePrint( "Error:%s" % e)
                 except Exception , e:
@@ -636,9 +659,9 @@ class APIServerThread(threading.Thread):
                     
             if socks.get(m2) == zmq.POLLIN:
                 try:
-                    _message = m2.recv_multipart()
+                    _message = m2.recv_joan()
                     zoePrint( _message)
-                    m2.send_multipart(_message)
+                    m2.send_joan(_message)
                 except ValueError ,e:
                     zoePrint( "Error:%s" % e)
        
@@ -646,6 +669,18 @@ class APIServerThread(threading.Thread):
         print "Trying to stop APIServer thread "
         self.zs.stop()
         self.run = False
+
+class SPCmdProcess(object):
+	spCmd = None
+	spCmdReply = None
+	def __init__(self,api):
+		self.spApi = api
+		self.spCmd = ZoeCmds.SPCmd(api)
+		self.spCmdReply = SPCmdReplyBase(api)
+		
+	def execute_cmd(self,cmdStr):		
+	    self.spCmd.execute_cmd(cmdStr)
+	    return self.spCmdReply(self.spCmd.MessageId,self.spCmd._fields)
 
 
 if __name__ == '__main__': 
