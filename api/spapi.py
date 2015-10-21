@@ -486,6 +486,8 @@ class spapi():
         #print('ProductListByCodeReply:%s,%s,%s' % (inst_code,is_ready,ret_msg))
         thread.start_new_thread(mySPAPI.dealProductListByCodeReply,(inst_code,))
     def dealProductListByCodeReply(self,inst_code): 
+        if not mySPAPI.runStore['InstrumentList'].has_key(inst_code):
+            mySPAPI.runStore['InstrumentList'][inst_code] = {}
         instrument = mySPAPI.runStore['InstrumentList'][inst_code]
         instrument['ProductCount'] = mySPAPI.SPAPI_GetProductCount()
         for i in range(instrument['ProductCount']):
@@ -611,8 +613,8 @@ class APIServerThread(threading.Thread):
                     else:
                         if not tickSC:
                             self.mySPAPI.runStore['InstrumentCount'] = self.mySPAPI.SPAPI_GetInstrumentCount()
-                            self.mySPAPI.runStore['ProductCount'] = self.mySPAPI.SPAPI_GetProductCount()
-                            zoePrint( "InstrumentCount:%(InstrumentCount)s, ProductCount:%(ProductCount)s" % self.mySPAPI.runStore)
+                            #self.mySPAPI.runStore['ProductCount'] = self.mySPAPI.SPAPI_GetProductCount()
+                            zoePrint( "InstrumentCount:%(InstrumentCount)s" % self.mySPAPI.runStore )
                             # self.mySPAPI.SubscribeTickers(Contracts)
                             # xyzhu test
                             # for Contract in Contracts:
@@ -653,9 +655,9 @@ class APIServerThread(threading.Thread):
                     else:
 						pass # 处理没有调用返回时如何响应客户端
                 except ValueError ,e:
-                    zoePrint( "Error:%s" % e)
+                    zoePrint( "ValueError:%s" % e)
                 except Exception , e:
-                    zoePrint( "Error:%s" % e)
+                    zoePrint( "Exception:%s" % e)
                     
             if socks.get(m2) == zmq.POLLIN:
                 try:
