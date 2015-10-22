@@ -349,6 +349,7 @@ class SPCmd(SPCmdBase): #用于定义 SP 命令
         # print self._fields['ProductId']
 
         if self.MessageId == '5107':
+            # print '_fields["ProductId"]' , self._fields['ProductId']
             returnCode = self.spApi.SubscribeTicker(self._fields['ProductId'], 1)
             self._fields['ReturnCode'] = returnCode       #  在此处填写RecodeCode及其它需要返回的内容
             return returnCode
@@ -598,7 +599,10 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         # <MessageId>,<MessageType>,<ReturnCode>,<ProductId>,<Options><cr><lf>
         header = ('MessageId','MessageType','ReturnCode','ProductId','Options')
         _fields=vks
-        _fields['ReturnCode']=vks['ReturnCode']
+        # print 'vks : ' , vks
+        # print 'vks["ReturnCode"] :' ,vks['ReturnCode']
+        _fields['ReturnCode'] = str(vks['ReturnCode'])
+        _fields['MessageType'] = '3'
         return self._packaging(_fields,header)
 
     # def generating_9902_reply(self,MessageId,**vks):

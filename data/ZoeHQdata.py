@@ -20,7 +20,7 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-#ÐèÒªMySQLÖ§³Ö£¬ ÇëÏÈ½¨Á¢Ò»MySQL£¬ÔÙ½¨Á¢Ò»database:hq, Í¬Ê±½¨Á¢zoeÓÃ»§ÓÐhqµÄËùÓÐÈ¨ÏÞ¼´¿É£¬
+#ï¿½ï¿½ÒªMySQLÖ§ï¿½Ö£ï¿½ ï¿½ï¿½ï¿½È½ï¿½ï¿½ï¿½Ò»MySQLï¿½ï¿½ï¿½Ù½ï¿½ï¿½ï¿½Ò»database:hq, Í¬Ê±ï¿½ï¿½ï¿½ï¿½zoeï¿½Ã»ï¿½ï¿½ï¿½hqï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¨ï¿½Þ¼ï¿½ï¿½É£ï¿½
 #self.dbapistring = "mysql+mysqldb://zoe:37191196@%s/hq" % self.dbServerIP
 
 
@@ -85,7 +85,8 @@ class ZoeDataThread( threading.Thread ):
         self.hqServerIP = vks['HQServerIP']
         #self.dbapistring = r"sqlite:///c:\zoehq.db3"
         #pdb.set_trace()
-        self.dbapistring = "mysql+mysqldb://zoe:37191196@%s/hq" % self.dbServerIP     
+        # self.dbapistring = "mysql+mysqldb://zoe:37191196@%s/hq" % self.dbServerIP
+        self.dbapistring = "mysql+mysqldb://root:123456@%s/hq" % self.dbServerIP
         if vks.has_key( 'interval' ):
             self.interval = vks['interval']
         if vks.has_key( 'dbapiname' ):
@@ -93,11 +94,11 @@ class ZoeDataThread( threading.Thread ):
         if vks.has_key( 'SubtoString' ):
             self.SubtoString = vks['SubtoString']
         else:
-            self.SubtoString = "tcp://%s:8199"  % self.hqServerIP   #½ÓÊÕÐÐÇé
+            self.SubtoString = "tcp://%s:8199"  % self.hqServerIP   #ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if vks.has_key( 'PubBindString' ):
             self.PubBindString = vks['PubBindString']
         else:
-            self.PubBindString = "tcp://%s:8189" % self.hqServerIP  #·¢²¼Êý¾Ý, ÈôÓÐÇëÇó´ÓDBÄÃÊý¾Ý
+            self.PubBindString = "tcp://%s:8189" % self.hqServerIP  #ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½DBï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             
             
     def connHQServer(self):
@@ -170,7 +171,7 @@ class ZoeDataThread( threading.Thread ):
             if socks.get(self.frontend_socket) == zmq.POLLIN:
                 try:
                     _type, data = self.frontend_socket.recv_json()
-                    #print _type, data
+                    print _type, data
                     #(_type,data) = _message['type'], _message['data']
                     if (_type == 'price'):
                         Psender.send_json(data)

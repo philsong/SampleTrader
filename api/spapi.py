@@ -644,7 +644,7 @@ class APIServerThread(threading.Thread):
                 try:
                     _message = m1.recv_json()
                     _message_reply = ''
-                    # zoePrint(_message)
+                    zoePrint(_message)
                     if len(_message)>35:
                         mySCO = SPCommObject(_message)
                         if mySCO.CmdType == 'CA':
@@ -663,7 +663,7 @@ class APIServerThread(threading.Thread):
                     
             if socks.get(m2) == zmq.POLLIN:
                 try:
-                    _message = m2.recv_joan()
+                    _message = m2.recv_json()
                     zoePrint( _message)
                     m2.send_json(_message)
                 except ValueError ,e:
