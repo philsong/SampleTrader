@@ -255,12 +255,15 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
     MAC = ''				# CRC 校验 取为全包长-8字节
     
     def __init__(self,buf = None):
-		if buf:
-			self.unpack(buf)
+        if buf:
+            self.unpack(buf)
     
     @property
     def PktLen(self):
-        return 35+8+len(self.CmdDataBuf)    
+        return 35+8+len(self.CmdDataBuf)
+    @PktLen.setter
+    def PktLen(self,value):
+        self._PktLen = value
     
     @property
     def ZipFlag(self):
@@ -293,19 +296,22 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
         return self.HeadDataBuf+self.CmdDataBuf+self.MAC
 		
     def __unpackHead(self):
-        self.CmdType,self.SrcStationID,self.DstStationID,self.ServiceID,self.SerieslNo,self.PktLen,self.ZipFlag = struct.unpack('2s 4s 4s 4s 16s 4s 1s',self.HeadDataBuf)
-	
-	def unpack(self,buf):
-		if len(buf) < 35+8:
-			raise RuntimeError('Packet is too short!')
-		self.HeadDataBuf = buf[:35]
-		self.MAC = buf[-8:]
-		self.CmdDataBuf = buf[35:-8]
-		self.__unpackHead()
-		
+        self.CmdType,SrcStationID,DstStationID,ServiceID,SerieslNo,PktLen,ZipFlag = struct.unpack('2s 4s 4s 4s 16s 4s 1s',self.HeadDataBuf)
+        self.SrcStationID = int(SrcStationID.strip('\0'))
+        self.DstStationID = int(DstStationID.strip('\0'))
+        self.ServiceID = int(ServiceID.strip('\0'))
+        self.SerieslNo = int(SerieslNo.strip('\0'))
+        self.PktLen = int(PktLen.strip('\0'))
+        self.ZipFlag = int(ZipFlag.strip('\0'))
 
-		
-		
+    def unpack(self,buf):
+        if len(buf) < 35+8:
+            raise RuntimeError('Packet is too short!')
+        self.HeadDataBuf = buf[:35]
+        self.MAC = buf[-8:]
+        self.CmdDataBuf = buf[35:-8]
+        self.__unpackHead()
+
 class SPCmd(SPCmdBase): #用于定义 SP 命令
     # def __int__(self,api):
     #     self.spApi = api
@@ -336,6 +342,7 @@ class SPCmd(SPCmdBase): #用于定义 SP 命令
         return order
 
     def execute_cmd(self, cmdStr):
+        print 'in execute_cmd ' , cmdStr
         _cmd = self.__call__(cmdStr)
         self.MessageId = _cmd[0]
         self._fields = _cmd[1]
@@ -412,8 +419,14 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         _v = map(lambda x:str(x) if x else '',_v)
         replyStr = ','.join(_v)
         return replyStr+'\t\n'
+
+    def test(self,MessageId,vks):
+        print 'in SPCmdReplyBase test'
+        print MessageId
+        print vks
         
-    def __call__(self,MessageId,**vks):
+    def __call__(self,MessageId,vks):
+        # print 'in SPCmdReplyBase __call__'
         replyStr=''
         if (MessageId == '3103'):
             replyStr = self.generating_3103_reply(MessageId,vks)
@@ -451,6 +464,8 @@ class SPCmdReplyBase(object): #用于定义 SP reply
             replyStr = self.generating_4102_reply(MessageId,vks)
         elif (MessageId == '4108'):
             replyStr = self.generating_4108_reply(MessageId,vks)
+
+        # print 'in SPCmdReplyBase __call__ replyStr:' , replyStr
         return replyStr
      
     def generating_4108_reply(self,MessageId,**vks):
@@ -579,7 +594,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
     #     _fields['Time']=vks['Time']
     #     return self._packaging(_fields,header)
 
-    def generating_5107_reply(self,MessageId,**vks):
+    def generating_5107_reply(self,MessageId,vks):
         # <MessageId>,<MessageType>,<ReturnCode>,<ProductId>,<Options><cr><lf>
         header = ('MessageId','MessageType','ReturnCode','ProductId','Options')
         _fields=vks

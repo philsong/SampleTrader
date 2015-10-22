@@ -642,16 +642,18 @@ class APIServerThread(threading.Thread):
             socks = dict(poller.poll())
             if socks.get(m1) == zmq.POLLIN:
                 try:
-                    _message = m1.recv_joan()
+                    _message = m1.recv_json()
                     _message_reply = ''
-                    zoePrint(_message)
+                    # zoePrint(_message)
                     if len(_message)>35:
-						mySCO = SPCommObject(_message)
-						if mySCO.CmdType == 'CA':
-							mySCP = SPCmdProcess(self.mySPAPI)
-							r_message_reply = mySCP.execute_cmd(mySCO.CmdDataBuf)                                                           
+                        mySCO = SPCommObject(_message)
+                        if mySCO.CmdType == 'CA':
+                            mySCP = SPCmdProcess(self.mySPAPI)
+                            _message_reply = mySCP.execute_cmd(mySCO.CmdDataBuf)
+                            # print 'in run:' , r_message_reply
                     if _message_reply:
-					    m1.send_joan(_message_reply)
+                        print 'in _message_reply :' , _message_reply
+                        m1.send_json(_message_reply)
                     else:
 						pass # 处理没有调用返回时如何响应客户端
                 except ValueError ,e:
@@ -663,7 +665,7 @@ class APIServerThread(threading.Thread):
                 try:
                     _message = m2.recv_joan()
                     zoePrint( _message)
-                    m2.send_joan(_message)
+                    m2.send_json(_message)
                 except ValueError ,e:
                     zoePrint( "Error:%s" % e)
        
@@ -673,16 +675,20 @@ class APIServerThread(threading.Thread):
         self.run = False
 
 class SPCmdProcess(object):
-	spCmd = None
-	spCmdReply = None
-	def __init__(self,api):
-		self.spApi = api
-		self.spCmd = ZoeCmds.SPCmd(api)
-		self.spCmdReply = SPCmdReplyBase(api)
+    spCmd = None
+    spCmdReply = None
+    def __init__(self,api):
+        self.spApi = api
+        self.spCmd = SPCmd(api)
+        self.spCmdReply = SPCmdReplyBase(api)
 		
-	def execute_cmd(self,cmdStr):		
-	    self.spCmd.execute_cmd(cmdStr)
-	    return self.spCmdReply(self.spCmd.MessageId,self.spCmd._fields)
+    def execute_cmd(self,cmdStr):
+        print 'before execute_cmd'
+        self.spCmd.execute_cmd(cmdStr)
+        print 'after execute_cmd'
+
+        # self.spCmdReply.test(self.spCmd.MessageId, self.spCmd._fields)
+        return self.spCmdReply.__call__(self.spCmd.MessageId,self.spCmd._fields)
 
 
 if __name__ == '__main__': 

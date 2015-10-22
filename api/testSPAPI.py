@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     context = zmq.Context.instance()
     m1 = context.socket(zmq.REQ)
-    m1.connect("tcp://%s:%d" % ('10.68.89.100',8197))
+    m1.connect("tcp://%s:%d" % ('14.136.212.219',8197))
 
     object = SPCommObject()
     object.CmdType = 'CA'
@@ -19,6 +19,9 @@ if __name__ == '__main__':
     objectstr = object.pack()
     print "Packet lenght:%s" % len(objectstr)
     print "'%s'" % objectstr
+
+    # object.unpack(objectstr)
+
     m1.send_json(objectstr)
     print "send OK"
     print m1.recv_json()
