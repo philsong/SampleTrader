@@ -355,61 +355,73 @@ class SPCmd(SPCmdBase): #用于定义 SP 命令
             return returnCode
             
         elif self.MessageId == '5108':
-            return self.spApi.SubscribeTicker(self._fields['ProductId'], 0)
+            returnCode =  self.spApi.SubscribeTicker(self._fields['ProductId'], 0)
+            self._fields['ReturnCode'] = returnCode       #  在此处填写RecodeCode及其它需要返回的内容
+            return returnCode
         elif self.MessageId == '9011':
-            return
+            #obsolete
+            pass
         elif self.MessageId == '9012':
-            return
+            #obsolete
+            pass
         elif self.MessageId == '9013':
-            return self.spApi.SPAPI_GetLoginStatus(self._fields['LinkId'])
+            #obsolete
+            pass
+            #return self.spApi.SPAPI_GetLoginStatus(self._fields['LinkId'])
         elif self.MessageId == '4106':
-            return
+            #obsolete
+            pass
         elif self.MessageId == '4107':
-            return self.spApi.SPAPI_SubscribePrice(self._fields['ProductId'], 1)
+            returnCode =  self.spApi.SPAPI_SubscribePrice(self._fields['ProductId'], 1)
+            self._fields['ReturnCode'] = returnCode       #  在此处填写RecodeCode及其它需要返回的内容
+            return returnCode
         elif self.MessageId == '4102':
-            return
+            #obsolete
+            pass
         elif self.MessageId == '4108':
-            return self.spApi.SPAPI_SubscribePrice(self._fields['ProductId'], 0)
+            returnCode = self.spApi.SPAPI_SubscribePrice(self._fields['ProductId'], 0)
+            self._fields['ReturnCode'] = returnCode       #  在此处填写RecodeCode及其它需要返回的内容
+            return returnCode
         elif self.MessageId == '3101':
-            return
+            #obsolete
+            pass
         elif self.MessageId == '3102':
-            return
+            #obsolete
+            pass
         elif self.MessageId == '3121':
+            #no use
             return self.spApi.SPAPI_AccountLogin(self._fields['AccNo'])
         elif self.MessageId == '3122':
+            #no use
             return self.spApi.SPAPI_AccountLogout(self._fields['AccNo'])
         elif self.MessageId == '3103':
             action = self._fields['Action']
             order = self.form_order(self._fields)
             if action == '1':
-                return self.spApi.SPAPI_AddOrder(order)
+                returnCode = self.spApi.SPAPI_AddOrder(order)
             elif action == '2':
                 LastPrc = float(_fields['LastPrc'])
                 LastQty = long(_fields['LastQty'])
-                return self.spApi.SPAPI_ChangeOrder(order, LastPrc,  LastQty)
+                returnCode = self.spApi.SPAPI_ChangeOrder(order, LastPrc,  LastQty)
             elif action == '3':
-                return self.spApi.SPAPI_DeleteOrder(order)
+                returnCode = self.spApi.SPAPI_DeleteOrder(order)
             elif action == '8':
-                return self.spApi.SPAPI_ActivateOrder(order)
+                returnCode = self.spApi.SPAPI_ActivateOrder(order)
             elif action == '9':
-                return self.spApi.SPAPI_InactivateOrder(order)
+                returnCode = self.spApi.SPAPI_InactivateOrder(order)
+            else:
+                returnCode = -1
+            self._fields['ReturnCode'] = returnCode
+            return returnCode
         elif self.MessageId == '3186':
-            return
+            #obsolete
+            pass
         elif self.MessageId == '3181':
-            return
+            #obsolete
+            pass
         elif self.MessageId == '3187':
-            return
-        elif self.MessageId == '9109':
-            return
-        elif self.MessageId == '9086':
-            return
-        elif self.MessageId == '9186':
-            return
-        elif self.MessageId == '9081':
-            return
-        elif self.MessageId == '9181':
-            return
-
+            #obsolete
+            pass
 
 
 class SPCmdReplyBase(object): #用于定义 SP reply
@@ -439,8 +451,8 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         #     replyStr = self.generating_3109_reply(MessageId,vks)
         # elif (MessageId == '3119'):
         #     replyStr = self.generating_3119_reply(MessageId,vks)
-        elif (MessageId == '3187'):
-            replyStr = self.generating_3187_reply(MessageId,vks)
+        # elif (MessageId == '3187'):
+        #     replyStr = self.generating_3187_reply(MessageId,vks)
         # elif (MessageId == '9901'):
         #     replyStr = self.generating_9901_reply(MessageId,vks)
         # elif (MessageId == '9003'):
@@ -457,12 +469,12 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         #     replyStr = self.generating_5103_reply(MessageId,vks)
         elif (MessageId == '5108'):
             replyStr = self.generating_5108_reply(MessageId,vks)
-        elif (MessageId == '4106'):
-            replyStr = self.generating_4106_reply(MessageId,vks)
+        # elif (MessageId == '4106'):
+        #     replyStr = self.generating_4106_reply(MessageId,vks)
         elif (MessageId == '4107'):
             replyStr = self.generating_4107_reply(MessageId,vks)
-        elif (MessageId == '4102'):
-            replyStr = self.generating_4102_reply(MessageId,vks)
+        # elif (MessageId == '4102'):
+        #     replyStr = self.generating_4102_reply(MessageId,vks)
         elif (MessageId == '4108'):
             replyStr = self.generating_4108_reply(MessageId,vks)
 
@@ -477,75 +489,75 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         _fields['ReturnCode']=vks['ReturnCode']
         return self._packaging(_fields,header)
 
-    def generating_4102_reply(self,MessageId,**vks):
-        # <MessageId>,<MessageType>,<ProductId>,<ProductName>,<ProductType>,<ContractSize>,
-        # <ExpiryDate>,<InstrumentCode>,<Currency>,<Strike>,<CallPut>,<Underlying>,<BidPrice1>,
-        # <BidQty1>,<BidPrice2>,<BidQty2>,<BidPrice3>,<BidQty3>,<BidPrice4>,<BidQty4>,<BidPrice5>,
-        # <BidQty5>,<AskPrice1>,<AskQty1>,<AskPrice2>,<AskQty2>,<AskPrice3>,<AskQty3>,<AskPrice4>,
-        # <AskQty4>,<AskPrice5>,<AskQty5>,<LastPrice1>,<LastQty1>,<LastPrice2>,<LastQty2>,<LastPrice3>,
-        # <LastQty3>,<LastPrice4>,<LastQty4>,<LastPrice5>,<LastQty5>,<OpenInterest>,<TurnoverAmount>,
-        # <TurnoverVolume>,<TickerHigh>,<TickerLow>,<EquilibriumPrice>,<Open>,<High>,<Low>,<PreviousClose>,
-        # <PreviousCloseDate>,<TradeStatus>,<TradeStateNo><cr><lf>
-        header = ('MessageId','MessageType','ProductId','ProductName','ProductType','ContractSize',
-                  'ExpiryDate','InstrumentCode','Currency','Strike','CallPut','Underlying','BidPrice1',
-                  'BidQty1','BidPrice2','BidQty2','BidPrice3','BidQty3','BidPrice4','BidQty4','BidPrice5',
-                  'BidQty5','AskPrice1','AskQty1','AskPrice2','AskQty2','AskPrice3','AskQty3','AskPrice4',
-                  'AskQty4','AskPrice5','AskQty5','LastPrice1','LastQty1','LastPrice2','LastQty2','LastPrice3',
-                  'LastQty3','LastPrice4','LastQty4','LastPrice5','LastQty5','OpenInterest','TurnoverAmount',
-                  'TurnoverVolume','TickerHigh','TickerLow','EquilibriumPrice','Open','High','Low','PreviousClose',
-                  'PreviousCloseDate','TradeStatus','TradeStateNo')
-        _fields=vks
-        _fields['ProductName']=vks['ProductName']
-        _fields['ProductType']=vks['ProductType']
-        _fields['ContractSize']=vks['ContractSize']
-        _fields['InstrumentCode']=vks['InstrumentCode']
-        _fields['Currency']=vks['Currency']
-        _fields['Strike']=vks['Strike']
-        _fields['CallPut']=vks['CallPut']
-        _fields['Underlying']=vks['Underlying']
-        _fields['BidPrice1']=vks['BidPrice1']
-        _fields['BidQty1']=vks['BidQty1']
-        _fields['BidPrice2']=vks['BidPrice2']
-        _fields['BidQty2']=vks['BidQty2']
-        _fields['BidPrice3']=vks['BidPrice3']
-        _fields['BidQty3']=vks['BidQty3']
-        _fields['BidPrice4']=vks['BidPrice4']
-        _fields['BidQty4']=vks['BidQty4']
-        _fields['BidPrice5']=vks['BidPrice5']
-        _fields['BidQty5']=vks['BidQty5']
-        _fields['AskPrice1']=vks['AskPrice1']
-        _fields['AskQty1']=vks['AskQty1']
-        _fields['AskPrice2']=vks['AskPrice2']
-        _fields['AskQty2']=vks['AskQty2']
-        _fields['AskPrice3']=vks['AskPrice3']
-        _fields['AskQty3']=vks['AskQty3']
-        _fields['AskPrice4']=vks['AskPrice4']
-        _fields['AskQty4']=vks['AskQty4']
-        _fields['AskPrice5']=vks['AskPrice5']
-        _fields['AskQty5']=vks['AskQty5']
-        _fields['LastPrice1']=vks['LastPrice1']
-        _fields['LastQty1']=vks['LastQty1']
-        _fields['LastPrice2']=vks['LastPrice2']
-        _fields['LastQty2']=vks['LastQty2']
-        _fields['LastPrice3']=vks['LastPrice3']
-        _fields['LastQty3']=vks['LastQty3']
-        _fields['LastPrice4']=vks['LastPrice4']
-        _fields['LastQty4']=vks['LastQty4']
-        _fields['LastPrice5']=vks['LastPrice5']
-        _fields['LastQty5']=vks['LastQty5']
-        _fields['OpenInterest']=vks['OpenInterest']
-        _fields['TurnoverAmount']=vks['TurnoverAmount']
-        _fields['TurnoverVolume']=vks['TurnoverVolume']
-        _fields['TickerHigh']=vks['TickerHigh']
-        _fields['TickerLow']=vks['TickerLow']
-        _fields['EquilibriumPrice']=vks['EquilibriumPrice']
-        _fields['Open']=vks['Open']
-        _fields['High']=vks['High']
-        _fields['Low']=vks['Low']
-        _fields['PreviousClose']=vks['PreviousClose']
-        _fields['TradeStatus']=vks['TradeStatus']
-        _fields['TradeStateNo']=vks['TradeStateNo']
-        return self._packaging(_fields,header)
+    # def generating_4102_reply(self,MessageId,**vks):
+    #     # <MessageId>,<MessageType>,<ProductId>,<ProductName>,<ProductType>,<ContractSize>,
+    #     # <ExpiryDate>,<InstrumentCode>,<Currency>,<Strike>,<CallPut>,<Underlying>,<BidPrice1>,
+    #     # <BidQty1>,<BidPrice2>,<BidQty2>,<BidPrice3>,<BidQty3>,<BidPrice4>,<BidQty4>,<BidPrice5>,
+    #     # <BidQty5>,<AskPrice1>,<AskQty1>,<AskPrice2>,<AskQty2>,<AskPrice3>,<AskQty3>,<AskPrice4>,
+    #     # <AskQty4>,<AskPrice5>,<AskQty5>,<LastPrice1>,<LastQty1>,<LastPrice2>,<LastQty2>,<LastPrice3>,
+    #     # <LastQty3>,<LastPrice4>,<LastQty4>,<LastPrice5>,<LastQty5>,<OpenInterest>,<TurnoverAmount>,
+    #     # <TurnoverVolume>,<TickerHigh>,<TickerLow>,<EquilibriumPrice>,<Open>,<High>,<Low>,<PreviousClose>,
+    #     # <PreviousCloseDate>,<TradeStatus>,<TradeStateNo><cr><lf>
+    #     header = ('MessageId','MessageType','ProductId','ProductName','ProductType','ContractSize',
+    #               'ExpiryDate','InstrumentCode','Currency','Strike','CallPut','Underlying','BidPrice1',
+    #               'BidQty1','BidPrice2','BidQty2','BidPrice3','BidQty3','BidPrice4','BidQty4','BidPrice5',
+    #               'BidQty5','AskPrice1','AskQty1','AskPrice2','AskQty2','AskPrice3','AskQty3','AskPrice4',
+    #               'AskQty4','AskPrice5','AskQty5','LastPrice1','LastQty1','LastPrice2','LastQty2','LastPrice3',
+    #               'LastQty3','LastPrice4','LastQty4','LastPrice5','LastQty5','OpenInterest','TurnoverAmount',
+    #               'TurnoverVolume','TickerHigh','TickerLow','EquilibriumPrice','Open','High','Low','PreviousClose',
+    #               'PreviousCloseDate','TradeStatus','TradeStateNo')
+    #     _fields=vks
+    #     _fields['ProductName']=vks['ProductName']
+    #     _fields['ProductType']=vks['ProductType']
+    #     _fields['ContractSize']=vks['ContractSize']
+    #     _fields['InstrumentCode']=vks['InstrumentCode']
+    #     _fields['Currency']=vks['Currency']
+    #     _fields['Strike']=vks['Strike']
+    #     _fields['CallPut']=vks['CallPut']
+    #     _fields['Underlying']=vks['Underlying']
+    #     _fields['BidPrice1']=vks['BidPrice1']
+    #     _fields['BidQty1']=vks['BidQty1']
+    #     _fields['BidPrice2']=vks['BidPrice2']
+    #     _fields['BidQty2']=vks['BidQty2']
+    #     _fields['BidPrice3']=vks['BidPrice3']
+    #     _fields['BidQty3']=vks['BidQty3']
+    #     _fields['BidPrice4']=vks['BidPrice4']
+    #     _fields['BidQty4']=vks['BidQty4']
+    #     _fields['BidPrice5']=vks['BidPrice5']
+    #     _fields['BidQty5']=vks['BidQty5']
+    #     _fields['AskPrice1']=vks['AskPrice1']
+    #     _fields['AskQty1']=vks['AskQty1']
+    #     _fields['AskPrice2']=vks['AskPrice2']
+    #     _fields['AskQty2']=vks['AskQty2']
+    #     _fields['AskPrice3']=vks['AskPrice3']
+    #     _fields['AskQty3']=vks['AskQty3']
+    #     _fields['AskPrice4']=vks['AskPrice4']
+    #     _fields['AskQty4']=vks['AskQty4']
+    #     _fields['AskPrice5']=vks['AskPrice5']
+    #     _fields['AskQty5']=vks['AskQty5']
+    #     _fields['LastPrice1']=vks['LastPrice1']
+    #     _fields['LastQty1']=vks['LastQty1']
+    #     _fields['LastPrice2']=vks['LastPrice2']
+    #     _fields['LastQty2']=vks['LastQty2']
+    #     _fields['LastPrice3']=vks['LastPrice3']
+    #     _fields['LastQty3']=vks['LastQty3']
+    #     _fields['LastPrice4']=vks['LastPrice4']
+    #     _fields['LastQty4']=vks['LastQty4']
+    #     _fields['LastPrice5']=vks['LastPrice5']
+    #     _fields['LastQty5']=vks['LastQty5']
+    #     _fields['OpenInterest']=vks['OpenInterest']
+    #     _fields['TurnoverAmount']=vks['TurnoverAmount']
+    #     _fields['TurnoverVolume']=vks['TurnoverVolume']
+    #     _fields['TickerHigh']=vks['TickerHigh']
+    #     _fields['TickerLow']=vks['TickerLow']
+    #     _fields['EquilibriumPrice']=vks['EquilibriumPrice']
+    #     _fields['Open']=vks['Open']
+    #     _fields['High']=vks['High']
+    #     _fields['Low']=vks['Low']
+    #     _fields['PreviousClose']=vks['PreviousClose']
+    #     _fields['TradeStatus']=vks['TradeStatus']
+    #     _fields['TradeStateNo']=vks['TradeStateNo']
+    #     return self._packaging(_fields,header)
 
     def generating_4107_reply(self,MessageId,**vks):
         # <MessageId>,<MessageType>,<ReturnCode><cr><lf>
@@ -555,13 +567,13 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         _fields['ReturnCode']=vks['ReturnCode']
         return self._packaging(_fields,header)
 
-    def generating_4106_reply(self,MessageId,**vks):
-        # <MessageId>,<MessageType>,<ReturnCode><cr><lf>
-        # Example: 4106,3,0
-        header = ('MessageId','MessageType','ReturnCode')
-        _fields=vks
-        _fields['ReturnCode']=vks['ReturnCode']
-        return self._packaging(_fields,header)
+    # def generating_4106_reply(self,MessageId,**vks):
+    #     # <MessageId>,<MessageType>,<ReturnCode><cr><lf>
+    #     # Example: 4106,3,0
+    #     header = ('MessageId','MessageType','ReturnCode')
+    #     _fields=vks
+    #     _fields['ReturnCode']=vks['ReturnCode']
+    #     return self._packaging(_fields,header)
 
     def generating_5108_reply(self,MessageId,**vks):
         # <MessageId>,<MessageType>,<ProductId><cr><lf>
@@ -644,13 +656,13 @@ class SPCmdReplyBase(object): #用于定义 SP reply
     #     _fields['netavg']=vks['netavg']
     #     return self._packaging(_fields,header)
 
-    def generating_3187_reply(self,MessageId,**vks):
-        # <MessageId>,<MessageType>,<DataMask>,<AccNo>,<DataCount><ReturnCode><cr><lf>
-        header = ('MessageId','MessageType','DataMask','AccNo','DataCount')
-        _fields=vks
-        _fields['AccNo']=vks['AccNo']
-        _fields['DataCount']=vks['DataCount']
-        return self._packaging(_fields,header)
+    # def generating_3187_reply(self,MessageId,**vks):
+    #     # <MessageId>,<MessageType>,<DataMask>,<AccNo>,<DataCount><ReturnCode><cr><lf>
+    #     header = ('MessageId','MessageType','DataMask','AccNo','DataCount')
+    #     _fields=vks
+    #     _fields['AccNo']=vks['AccNo']
+    #     _fields['DataCount']=vks['DataCount']
+    #     return self._packaging(_fields,header)
 
     # def generating_3119_reply(self,MessageId,**vks):
     #     # <MessageId>,<MessageType>,<Status>,<AccNo>,<IntOrderNo>,<ProductId>,<BuySell>,<Price>,
@@ -716,6 +728,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         # e.g. 3122,3,0,D1,1000,OK
         header = ('MessageId','MessageType','ReturnCode','UserId','AccNo','ReturnMessage')
         _fields = vks
+        _fields['MessageType']='3'
         _fields['ReturnCode']=vks['ReturnCode']
         _fields['UserId']=vks['UserId']
         _fields['ReturnMessage']=vks['ReturnMessage']
@@ -727,6 +740,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         # e.g. 3121,3,0,D1,1000,OK
         header = ('MessageId','MessageType','ReturnCode','UserId','AccNo','ReturnMessage')
         _fields = vks
+        _fields['MessageType']='3'
         _fields['ReturnCode']=vks['ReturnCode']
         _fields['UserId']=vks['UserId']
         _fields['ReturnMessage']=vks['ReturnMessage']
@@ -741,6 +755,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
             'IntOrderNo','ProductId','BuySell','Price','Qty','OpenClose','OrderType','ValidType','ValidTime','Ref','TPlus1','Initiator','ClientOrderId','TradedQty','Ref2',
             'CondType','StopType','StopPrice','SchedTime','UpLevel','UpPrice','DownLevel','DownPrice')
         _fields = vks
+        _fields['MessageType']='3'
         _fields['ReturnCode']=vks['ReturnCode']
         _fields['ReturnMessage']=vks['ReturnMessage']
         _fields['Status']=vks['Status']
