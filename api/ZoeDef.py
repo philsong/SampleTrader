@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 
 from ctypes import *
-from ctypes.wintypes import *
+#from ctypes.wintypes import *
 
 
 #行情广播,到API
@@ -318,3 +318,12 @@ class SPApiCcyRate(Structure):
     _fields = [
     ('Ccy',     c_char * 4),
     ('Rate',    c_double) ]
+
+
+#define Error Message
+
+E_CMD_8001 = 8000   # 执行API过程无返回
+E_CMD_8001 = 8001   # 不能解析包
+E_CMD_8002 = 8002   # 包长度不正确
+E_CMD_8003 = 8003   # 包CRC不正确
+

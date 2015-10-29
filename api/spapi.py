@@ -2,7 +2,7 @@
 # -*- coding: utf8 -*-
 
 from ctypes import *
-from ctypes.wintypes import *
+#from ctypes.wintypes import *
 import time
 import datetime
 from  multiprocessing import JoinableQueue as Queue
@@ -11,8 +11,7 @@ from os.path import exists,join,realpath,curdir
 from platform import architecture
 import logging
 import logging.config
-import thread
-import threading
+from threading import Thread,Condition,Lock
 import zmq
 import pdb
 from zmq.eventloop.ioloop import IOLoop
@@ -40,7 +39,9 @@ Contracts0 = ('CLF6','CLG6','CLH6','CLJ6','CLK6','CLM6','CLN6','CLX5','CLZ5',
             'NQH6','NQM6','NQZ5',
             'GCG6','GCJ6','GCM6','GCZ5',
             'SIZ5','SIF6','SIN6','SIK6','SIN6','SIU6','SIZ6')
-Contracts = Contracts0[8:11] + Contracts0[22:36]            
+#Contracts = Contracts0[8:11] + Contracts0[22:36]      
+Contracts = []      
+      
 
 def initLogger(name='SPAPI', rootdir='.',level = logging.INFO):
     LOG_FILE = 'ZoeSPAPI.log'
@@ -55,16 +56,17 @@ def initLogger(name='SPAPI', rootdir='.',level = logging.INFO):
 
 log = initLogger()
 printQueue = Queue()
-printQueueCondition = threading.Condition()
+printQueueCondition = Condition()
 
-def printLoop():
-    while True:
-        #printQueueCondition.acquire()
-        #printQueueCondition.wait() 
-        msg = printQueue.get()            
-        #printQueueCondition.release
-        print msg
-        
+class PrintLoop(Thread):
+    def run(self):
+        while True:
+            #printQueueCondition.acquire()
+            #printQueueCondition.wait() 
+            msg = printQueue.get()            
+            #printQueueCondition.release
+            print msg
+            
 def zoePrint(msg):
     #printQueueCondition.acquire()
     try:
@@ -73,7 +75,13 @@ def zoePrint(msg):
     finally:
         #printQueueCondition.release
         pass
-    
+
+def showProcessChar():
+    dispchars = itertools.cycle(['-','\\','|','/'])
+    zoePrint("Begin Main Loop...")
+    while True:
+        print '\b'+dispchars.next()+'\b',
+        time.sleep(1)
           
 
 class spapi():
@@ -441,7 +449,7 @@ class spapi():
     def LoginStatusUpdateAddr(login_status):
         zoePrint('LoginStatusUpdate: %s' % login_status)
         if mutex.acquire(1):
-            spapi.loginStatus[80] = (login_status,"")
+            mySPAPI.loginStatus[80] = (login_status,"")
             mutex.release()  
     def LoginReplyAddr(ret_code, ret_msg):
         zoePrint('LoginReply:%s,%s' % (ret_code,ret_msg))
@@ -470,33 +478,22 @@ class spapi():
         zoePrint('%s -- PServerLinkStatusUpdate:%s,%s' % (datetime.datetime.now(),host_id, con_status))
         #spapi.loginStatus[host_id] = (con_status," ")
         if mutex.acquire(1):
-            spapi.loginStatus[host_id] = (con_status,"")
+            mySPAPI.loginStatus[host_id] = (con_status,"")
             mutex.release()          
     def ConnectionErrorAddr(host_id, link_err):
         zoePrint('%s -- ConnectionError:%s,%s' % (datetime.datetime.now(),host_id, link_err))
     def InstrumentListReplyAddr(is_ready, ret_msg):
         zoePrint('InstrumentListReply:%s,%s' % (is_ready,ret_msg))
         if is_ready:
-           spapi.runFlags['InstrumentList'] = is_ready
+           mySPAPI.runFlags['InstrumentList'] = is_ready
     #def ProductListReplyAddr(is_ready, ret_msg):
     #    print('ProductListReply:%s,%s' % (is_ready,ret_msg))
     def PswChangeReplyAddr(ret_code, ret_msg):  #add xiaolin 2013-03-19
         zoePrint('PswChangeReply:%s,%s' % (ret_code,ret_msg))
     def ProductListByCodeReplyAddr(inst_code, is_ready, ret_msg):   #add 2013-04-25
         #print('ProductListByCodeReply:%s,%s,%s' % (inst_code,is_ready,ret_msg))
-        thread.start_new_thread(mySPAPI.dealProductListByCodeReply,(inst_code,))
-    def dealProductListByCodeReply(self,inst_code): 
-        if not mySPAPI.runStore['InstrumentList'].has_key(inst_code):
-            mySPAPI.runStore['InstrumentList'][inst_code] = {}
-        instrument = mySPAPI.runStore['InstrumentList'][inst_code]
-        instrument['ProductCount'] = mySPAPI.SPAPI_GetProductCount()
-        for i in range(instrument['ProductCount']):
-            prod = SPApiProduct()
-            if (mySPAPI.SPAPI_GetProduct(i,  prod)==0):
-                product = prod.getDict()
-                #zoePrint( '        ',product['ProdCode'],product['ProdName'])
-                instrument['ProductList'][product['ProdCode']] = product
-        mySPAPI.runStore['InstrumentList'][inst_code] = instrument
+        t=DealProductListByCodeReply(mySPAPI,inst_code)
+        t.start()
 
     def BusinessDateReplyAddr(business_date):
         # todo
@@ -528,11 +525,11 @@ class spapi():
         return (f81,f83,f87,f88)
         
     def SubscribeTickers(self,p_list=[]):
-        
         for t in p_list:
             num = self.SPAPI_SubscribeTicker(t,1)
             if num==0:
                 self.SubscribedTicker[t]=0
+                zoePrint( "Subscribed Ticker:%s" % t)
                 
     def getInstrumentList(self):
         self.runStore['InstrumentList']={}
@@ -551,9 +548,9 @@ class spapi():
         zoePrint( "End get Instrument List")
 
 #用于发布行情的进程，从行情队列里（API的callback函数里压进队列）读取行情，从ZMQ的PUB里发布出去                
-class ZmqServerThread(threading.Thread):
+class ZmqServerThread(Thread):
     def __init__(self, spApi):
-        threading.Thread.__init__(self)
+        super(ZmqServerThread,self).__init__()
         self.spApi =  spApi
         self.hq_publisher = context.socket(zmq.PUB)
         self.hq_publisher.connect('tcp://%s:%d' % (self.spApi.ZoeServerSocket['DBsubServerIP'],self.spApi.ZoeServerSocket['DBsubServerPort']))  
@@ -563,18 +560,18 @@ class ZmqServerThread(threading.Thread):
         Treceiver.bind("inproc://ticker")          
         while True:  
             ts = Treceiver.recv_json()
-            #zoePrint( "%(fProductId)4s: %(fPrice)10s %(fQty)10s" % ts)
+            zoePrint( "%(now)s ----  %(fProductId)4s: %(fPrice)10s %(fQty)10s" % {'now':datetime.datetime.now(),'fProductId':ts['fProductId'],'fPrice':ts['fPrice'],'fQty':ts['fQty']})
             self.hq_publisher.send_json(["ticker",ts])
               
     def stop(self):
         zoePrint("Trying to stop ZMQServer thread ")
         self.run = False
 
-class APIServerThread(threading.Thread):
+class APIServerThread(Thread):
     def __init__(self):
         global context,hqsender,Tsender,Psender,mutex,mySPAPI
-        threading.Thread.__init__(self)
-        mutex=threading.Lock()
+        super(APIServerThread,self).__init__()
+        mutex=Lock()
         #context = zmq.Context()
         context = zmq.Context.instance()
         hqsender = context.socket(zmq.PAIR)
@@ -588,10 +585,18 @@ class APIServerThread(threading.Thread):
         #self.zs = ZmqServerThread(self.mySPAPI)
         self.SP_Server = ZoeServerSocket['SPServerIP']
         self.APILogin()
-        thread.start_new_thread(self.showProcessChar,())
+        t = Thread(target = APIServerThread.showProcessChar, args = (self,))
+        t.start()
         
+    def showProcessChar(self):
+        dispchars = itertools.cycle(['-','\\','|','/'])
+        zoePrint("Begin Main Loop...")
+        while True:
+            print '\b'+dispchars.next()+'\b',
+            time.sleep(1)
         
     def APILogin(self):
+        zoePrint("Begin Login...")
         #sp.SPAPI_SetLoginInfo('192.168.10.2', 8080, 'DLLAPITEST', 'DLLAPITEST', 'SPAPI11', '12345678')
         #self.mySPAPI.SPAPI_SetLoginInfo(self.SP_Server, 8080, '123456', 'foreseefund', 'foreseefund02', 'liumingjie')
         #self.mySPAPI.SPAPI_SetLoginInfo(self.SP_Server, 8080, '123456', 'FORESEEFUND', 'FSF01', 'zxy123')
@@ -615,7 +620,8 @@ class APIServerThread(threading.Thread):
                             self.mySPAPI.runStore['InstrumentCount'] = self.mySPAPI.SPAPI_GetInstrumentCount()
                             #self.mySPAPI.runStore['ProductCount'] = self.mySPAPI.SPAPI_GetProductCount()
                             zoePrint( "InstrumentCount:%(InstrumentCount)s" % self.mySPAPI.runStore )
-                            # self.mySPAPI.SubscribeTickers(Contracts)
+                            zoePrint( "Begin Subscribe Init Tickers!" )
+                            self.mySPAPI.SubscribeTickers(Contracts)
                             # xyzhu test
                             # for Contract in Contracts:
                             # xyzhu test
@@ -623,12 +629,7 @@ class APIServerThread(threading.Thread):
                             self.mySPAPI.getInstrumentList()
                             tickSC = True
             time.sleep(1)
-        
-    def showProcessChar(self):
-        dispchars = itertools.cycle(['-','\\','|','/'])
-        while True:
-            print '\b'+dispchars.next()+'\b',
-            time.sleep(1)
+        zoePrint("... End Login! ")
 
     def run(self):
         m1 = context.socket(zmq.REP)
@@ -650,16 +651,22 @@ class APIServerThread(threading.Thread):
                         if mySCO.CmdType == 'CA':
                             mySCP = SPCmdProcess(self.mySPAPI)
                             _message_reply = mySCP.execute_cmd(mySCO.CmdDataBuf)
-                            # print 'in run:' , r_message_reply
+                        elif mySCO.CmdType == 'CB':
+                            mySCP = SPCmdNativeProcess(self.mySPAPI)
+                            _message_reply = mySCP.execute_cmd(mySCO.CmdDataBuf)
                     if _message_reply:
-                        print 'in _message_reply :' , _message_reply
+                        zoePrint( 'in _message_reply :%s' % _message_reply )
                         m1.send_json(_message_reply)
                     else:
-						pass # 处理没有调用返回时如何响应客户端
+                        pass # 处理没有调用返回时如何响应客户端
+                except KeyboardInterrupt ,e:
+                    zoePrint( "Bye Bye!")
+                    raise e                       
                 except ValueError ,e:
                     zoePrint( "ValueError:%s" % e)
                 except Exception , e:
                     zoePrint( "Exception:%s" % e)
+
                     
             if socks.get(m2) == zmq.POLLIN:
                 try:
@@ -674,21 +681,27 @@ class APIServerThread(threading.Thread):
         self.zs.stop()
         self.run = False
 
-class SPCmdProcess(object):
-    spCmd = None
-    spCmdReply = None
-    def __init__(self,api):
-        self.spApi = api
-        self.spCmd = SPCmd(api)
-        self.spCmdReply = SPCmdReplyBase(api)
-		
-    def execute_cmd(self,cmdStr):
-        print 'before execute_cmd'
-        self.spCmd.execute_cmd(cmdStr)
-        print 'after execute_cmd'
+class DealProductListByCodeReply(Thread):
+    def __init__(self,api,inst_code):
+        super(DealProductListByCodeReply,self).__init__()
+        self.mySPAPI=api
+        self.inst_code=inst_code
+        
+    def run(self): 
+        if not self.mySPAPI.runStore['InstrumentList'].has_key(self.inst_code):
+            self.mySPAPI.runStore['InstrumentList'][self.inst_code] = {'ProductList':{}}
+        instrument = self.mySPAPI.runStore['InstrumentList'][self.inst_code]
+        instrument['ProductCount'] = self.mySPAPI.SPAPI_GetProductCount()
+        for i in range(instrument['ProductCount']):
+            prod = SPApiProduct()
+            if (self.mySPAPI.SPAPI_GetProduct(i,  prod)==0):
+                product = prod.getDict()
+                #zoePrint( '        ',product['ProdCode'],product['ProdName'])
+                instrument['ProductList'][product['ProdCode']] = product
+        self.mySPAPI.runStore['InstrumentList'][self.inst_code] = instrument
 
-        # self.spCmdReply.test(self.spCmd.MessageId, self.spCmd._fields)
-        return self.spCmdReply.__call__(self.spCmd.MessageId,self.spCmd._fields)
+
+
 
 
 if __name__ == '__main__': 
@@ -703,7 +716,8 @@ if __name__ == '__main__':
         setServerIP(args.DeviceServerIP)
     if args.SPServerIP:
         ZoeServerSocket['SPServerIP'] = args.SPServerIP       
-    thread.start_new_thread(printLoop,())
+    t=PrintLoop()
+    t.start()
     apiserver = APIServerThread()
     apiserver.start()
     apiserver.join()

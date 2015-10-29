@@ -3,7 +3,9 @@
 
 import ZoeDef
 import struct
-import spapi
+import pickle
+
+
 
 class SPCmdBase(object): #用于定义 SP 命令
     def __init__(self,api):
@@ -13,52 +15,8 @@ class SPCmdBase(object): #用于定义 SP 命令
         self.cmdStr=cmdStr
         self._cv = cmdStr.split(',')
         self.MessageId = self._cv[0]
-        if (self.MessageId == '9011'): 
-            return '9011', self.parse_cmd_9011(self.cmdStr)
-        elif (self.MessageId == '9012'):
-            return '9012', self.parse_cmd_9012(self.cmdStr)
-        elif (self.MessageId == '9013'):
-            return '9013', self.parse_cmd_9013(self.cmdStr)
-        elif (self.MessageId == '5107'):
-            return '5107', self.parse_cmd_5107(self.cmdStr)
-        elif (self.MessageId == '5108'):
-            return '5108', self.parse_cmd_5108(self.cmdStr)
-        elif (self.MessageId == '4106'):
-            return '4106', self.parse_cmd_4106(self.cmdStr)
-        elif (self.MessageId == '4107'):
-            return '4107', self.parse_cmd_4107(self.cmdStr)
-        elif (self.MessageId == '4102'):
-            return '4102', self.parse_cmd_4102(self.cmdStr)
-        elif (self.MessageId == '4108'):
-            return '4108', self.parse_cmd_4108(self.cmdStr)
-        elif (self.MessageId == '3101'):
-            return '3101', self.parse_cmd_3101(self.cmdStr)
-        elif (self.MessageId == '3102'):
-            return '3102', self.parse_cmd_3102(self.cmdStr)
-        elif (self.MessageId == '3121'):
-            return '3121', self.parse_cmd_3121(self.cmdStr)
-        elif (self.MessageId == '3122'):
-            return '3122', self.parse_cmd_3122(self.cmdStr)
-        elif (self.MessageId == '3103'):
-            return '3103', self.parse_cmd_3103(self.cmdStr)
-        elif (self.MessageId == '3186'):
-            return '3186', self.parse_cmd_3186(self.cmdStr)
-        elif (self.MessageId == '3181'):
-            return '3181', self.parse_cmd_3181(self.cmdStr)
-        elif (self.MessageId == '3187'):
-            return '3187', self.parse_cmd_3187(self.cmdStr)
-        elif (self.MessageId == '9109'):
-            return '9109', self.parse_cmd_9109(self.cmdStr)
-        elif (self.MessageId == '9086'):
-            return '9086', self.parse_cmd_9086(self.cmdStr)
-        elif (self.MessageId == '9186'):
-            return '9186', self.parse_cmd_9186(self.cmdStr)
-        elif (self.MessageId == '9081'):
-            return '9081', self.parse_cmd_9081(self.cmdStr)
-        elif (self.MessageId == '9181'):
-            return '9181', self.parse_cmd_9181(self.cmdStr)
-        else:
-            return None, None
+        funcName = "parse_cmd_%s" % self.MessageId
+        return getattr(self,funcName)(self.cmdStr)
 
     def _splitCmd(self,cmdStr,Header):
         _ch = Header
@@ -243,16 +201,26 @@ class SPCmdBase(object): #用于定义 SP 命令
 
 class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 2015.10.21
     CmdType = 'CA' # 'CA' = spAPISocket, 'CB' = spNativeAPI,'CC'= DBcmd,etc
-    SrcStationID = 0	# 原站号
+    SrcStationID = 0    # 原站号
     DstStationID = 0   # 目标站号
-    ServiceID = 0		# 服务注册号，用于并行服务分配用
-    SerieslNo = 0		# 命令的序列号
-    _PktLen = 0			# 全包长
-    _ZipFlag = 0		# 是否压缩包体？ 0=False 1=True
-    
+    ServiceID = 0       # 服务注册号，用于并行服务分配用
+    SerieslNo = 0       # 命令的序列号
+    _PktLen = 0         # 全包长
+    _ZipFlag = 0        # 是否压缩包体？ 0=False 1=True
+    ReturnCode = 0      # 正常返回 0， 否则其它错误为非 0
     CmdDataBuf = ''      # 包体：全包长 - 8 - 头长
-    HeadDataBuf = ''	 # 包头
-    MAC = ''				# CRC 校验 取为全包长-8字节
+    HeadDataBuf = ''     # 包头
+    MAC = ''                # CRC 校验 取为全包长-8字节
+    
+    def reverseStationID(self):
+        ID = self.SrcStationID
+        self.SrcStationID = self.DstStationID
+        self.DstStationID = ID
+        
+    def generateCRC(self):
+        MAC = '11111111'
+        # finished function, can use 3des method
+        self.MAC = MAC
     
     def __init__(self,buf = None):
         if buf:
@@ -274,27 +242,27 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
     
     
     def __calculateMAC(self):
-		if (not self.HeadDataBuf):
-			self.__packHead()
-		buf = self.HeadDataBuf+self.CmdDataBuf
-		pass # 这里计算8位的检验码
-		self.MAC  = '11111111'		
+        if (not self.HeadDataBuf):
+            self.__packHead()
+        buf = self.HeadDataBuf+self.CmdDataBuf
+        pass # 这里计算8位的检验码
+        self.MAC  = '11111111'      
 
     def __packHead(self):
-		self.HeadDataBuf = struct.pack('2s 4s 4s 4s 16s 4s 1s',  # 头定长 35字节 
-					str(self.CmdType),
-					str(self.SrcStationID),
-					str(self.DstStationID),
-					str(self.ServiceID),
-					str(self.SerieslNo),
-					str(self.PktLen),
-					str(self.ZipFlag))
+        self.HeadDataBuf = struct.pack('2s 4s 4s 4s 16s 4s 1s',  # 头定长 35字节 
+                    str(self.CmdType),
+                    str(self.SrcStationID),
+                    str(self.DstStationID),
+                    str(self.ServiceID),
+                    str(self.SerieslNo),
+                    str(self.PktLen),
+                    str(self.ZipFlag))
 
     def pack(self):
         if (not self.MAC):
-		    self.__calculateMAC()
+            self.__calculateMAC()
         return self.HeadDataBuf+self.CmdDataBuf+self.MAC
-		
+        
     def __unpackHead(self):
         self.CmdType,SrcStationID,DstStationID,ServiceID,SerieslNo,PktLen,ZipFlag = struct.unpack('2s 4s 4s 4s 16s 4s 1s',self.HeadDataBuf)
         self.SrcStationID = int(SrcStationID.strip('\0'))
@@ -311,6 +279,9 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
         self.MAC = buf[-8:]
         self.CmdDataBuf = buf[35:-8]
         self.__unpackHead()
+        
+
+  
 
 class SPCmd(SPCmdBase): #用于定义 SP 命令
     # def __int__(self,api):
@@ -440,48 +411,10 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         
     def __call__(self,MessageId,vks):
         # print 'in SPCmdReplyBase __call__'
-        replyStr=''
-        if (MessageId == '3103'):
-            replyStr = self.generating_3103_reply(MessageId,vks)
-        elif (MessageId == '3121'):
-            replyStr = self.generating_3121_reply(MessageId,vks)
-        elif (MessageId == '3122'):
-            replyStr = self.generating_3122_reply(MessageId,vks)
-        # elif (MessageId == '3109'):
-        #     replyStr = self.generating_3109_reply(MessageId,vks)
-        # elif (MessageId == '3119'):
-        #     replyStr = self.generating_3119_reply(MessageId,vks)
-        # elif (MessageId == '3187'):
-        #     replyStr = self.generating_3187_reply(MessageId,vks)
-        # elif (MessageId == '9901'):
-        #     replyStr = self.generating_9901_reply(MessageId,vks)
-        # elif (MessageId == '9003'):
-        #     replyStr = self.generating_9003_reply(MessageId,vks)
-        # elif (MessageId == '9014'):
-        #     replyStr = self.generating_9014_reply(MessageId,vks)
-        # elif (MessageId == '9902'):
-        #     replyStr = self.generating_9902_reply(MessageId,vks)
-        elif (MessageId == '5107'):
-            replyStr = self.generating_5107_reply(MessageId,vks)
-        # elif (MessageId == '5102'):
-        #     replyStr = self.generating_5102_reply(MessageId,vks)
-        # elif (MessageId == '5103'):
-        #     replyStr = self.generating_5103_reply(MessageId,vks)
-        elif (MessageId == '5108'):
-            replyStr = self.generating_5108_reply(MessageId,vks)
-        # elif (MessageId == '4106'):
-        #     replyStr = self.generating_4106_reply(MessageId,vks)
-        elif (MessageId == '4107'):
-            replyStr = self.generating_4107_reply(MessageId,vks)
-        # elif (MessageId == '4102'):
-        #     replyStr = self.generating_4102_reply(MessageId,vks)
-        elif (MessageId == '4108'):
-            replyStr = self.generating_4108_reply(MessageId,vks)
-
-        # print 'in SPCmdReplyBase __call__ replyStr:' , replyStr
-        return replyStr
+        funcName="generating_%s_reply" % MessageId
+        return getattr(self,funcName)(MessageId,vks)
      
-    def generating_4108_reply(self,MessageId,**vks):
+    def generating_4108_reply(self,MessageId,vks):
         # <MessageId>,<MessageType>,<ReturnCode><cr><lf>
         # Example: 4108,3,0<cr><lf>
         header = ('MessageId','MessageType','ReturnCode')
@@ -559,7 +492,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
     #     _fields['TradeStateNo']=vks['TradeStateNo']
     #     return self._packaging(_fields,header)
 
-    def generating_4107_reply(self,MessageId,**vks):
+    def generating_4107_reply(self,MessageId,vks):
         # <MessageId>,<MessageType>,<ReturnCode><cr><lf>
         # Example: 4107,3,0<cr><lf>
         header = ('MessageId','MessageType','ReturnCode')
@@ -575,7 +508,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
     #     _fields['ReturnCode']=vks['ReturnCode']
     #     return self._packaging(_fields,header)
 
-    def generating_5108_reply(self,MessageId,**vks):
+    def generating_5108_reply(self,MessageId,vks):
         # <MessageId>,<MessageType>,<ProductId><cr><lf>
         # Example: 5108,3,0, HSIH0
         header = ('MessageId','MessageType','ProductId')
@@ -617,21 +550,21 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         _fields['MessageType'] = '3'
         return self._packaging(_fields,header)
 
-    # def generating_9902_reply(self,MessageId,**vks):
+    # def generating_9902_reply(self,MessageId,vks):
     #     # <MessageId>,< MessageType>,<AccNo>,<BuyingPower>,<cr><lf>
     #     header = ('MessageId','MessageType','AccNo','BuyingPower')
     #     _fields['AccNo']=vks['AccNo']
     #     _fields['BuyingPower']=vks['BuyingPower']
     #     return self._packaging(_fields,header)
 
-    # def generating_9014_reply(self,MessageId,**vks):
+    # def generating_9014_reply(self,MessageId,vks):
     #     # <MessageId>,<MessageType>,<LinkId>,<Status><cr><lf>
     #     header = ('MessageId','MessageType','LinkId','Status')
     #     _fields['LinkId']=vks['LinkId']
     #     _fields['Status']=vks['Status']
     #     return self._packaging(_fields,header)
 
-    # def generating_9003_reply(self,MessageId,**vks):
+    # def generating_9003_reply(self,MessageId,vks):
     #     # <MessageId>,<MessageType>,<AccNo>,<Ready><cr><lf>
     #     # Example: 9003,0,ACC1000,1
     #     header = ('MessageId','MessageType','AccNo','Ready')
@@ -639,7 +572,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
     #     _fields['Ready']=vks['Ready']
     #     return self._packaging(_fields,header)
 
-    # def generating_9901_reply(self,MessageId,**vks):
+    # def generating_9901_reply(self,MessageId,vks):
     #     # <MessageId>,<MessageType>,<AccNo>,<ProductId>,<preqty>,<preavg>,<longqty>,<longavg>,
     #     # <shortqty>,<shortavg>,<netqty>,<netavg><cr><lf>
     #     header = ('MessageId','MessageType','AccNo','ProductId','preqty','preavg','longqty','longavg',
@@ -656,7 +589,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
     #     _fields['netavg']=vks['netavg']
     #     return self._packaging(_fields,header)
 
-    # def generating_3187_reply(self,MessageId,**vks):
+    # def generating_3187_reply(self,MessageId,vks):
     #     # <MessageId>,<MessageType>,<DataMask>,<AccNo>,<DataCount><ReturnCode><cr><lf>
     #     header = ('MessageId','MessageType','DataMask','AccNo','DataCount')
     #     _fields=vks
@@ -664,7 +597,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
     #     _fields['DataCount']=vks['DataCount']
     #     return self._packaging(_fields,header)
 
-    # def generating_3119_reply(self,MessageId,**vks):
+    # def generating_3119_reply(self,MessageId,vks):
     #     # <MessageId>,<MessageType>,<Status>,<AccNo>,<IntOrderNo>,<ProductId>,<BuySell>,<Price>,
     #     # <Qty>,<OpenClose>,<OrderType>,<ValidType>,<ValidTime>,<Ref>,<TPlus1>,<Initiator>,<TradedQty>,
     #     # <Ref2>,<CondType>,<StopType>,<StopPrice>,<SchedTime>,<UpLevel>,<UpPrice>,<DownLevel>,<DownPrice><cr><lf>
@@ -697,7 +630,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
     #     _fields['DownPrice']=vks['DownPrice']
     #     return self._packaging(_fields,header)
 
-    # def generating_3109_reply(self,MessageId,**vks):
+    # def generating_3109_reply(self,MessageId,vks):
     #     # <MessageId>,<MessageType>,<RecNo>,<AccNo>,<IntOrderNo>,<ProductId>,<BuySell>,<Price>,
     #     # <Qty>,<OpenClose>,<Ref>,<Ref2>,<DealSrc>,<TradeNo>,<Status>,<NetPos>,<LogTime>,<TotalQty>,
     #     # <RemainQty>,<TradedQty><cr><lf>
@@ -723,7 +656,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
     #     _fields['TradedQty']=vks['TradedQty']
     #     return self._packaging(_fields,header)
 
-    def generating_3122_reply(self,MessageId,**vks):
+    def generating_3122_reply(self,MessageId,vks):
         # <MessageId>,<MessageType>,<ReturnCode>,<UserId>,<AccNo>,<ReturnMessage><cr><lf>
         # e.g. 3122,3,0,D1,1000,OK
         header = ('MessageId','MessageType','ReturnCode','UserId','AccNo','ReturnMessage')
@@ -734,7 +667,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         _fields['ReturnMessage']=vks['ReturnMessage']
         return self._packaging(_fields,header)
 
-    def generating_3121_reply(self,MessageId,**vks):
+    def generating_3121_reply(self,MessageId,vks):
         # MSGTYPE_REPLY (From Server to Client) <<<<<<
         # <MessageId>,<MessageType>,<ReturnCode>,<UserId>,<AccNo>,<ReturnMessage><cr><lf>
         # e.g. 3121,3,0,D1,1000,OK
@@ -746,7 +679,7 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         _fields['ReturnMessage']=vks['ReturnMessage']
         return self._packaging(_fields,header)
 
-    def generating_3103_reply(self,MessageId,**vks):
+    def generating_3103_reply(self,MessageId,vks):
         #MSGTYPE_REPLY (From Server to Client) <<<<<<
         #<MessageId>,<MessageType>,<ReturnCode>,<ReturnMessage>,<Status>,<Action>,<AccNo>,
         #<IntOrderNo>,<ProductId>,<BuySell>,<Price>,<Qty>,<OpenClose>,<OrderType>,<ValidType>,<ValidTime>,<Ref>,<TPlus1>,<Initiator>,<ClientOrderId>,<TradedQty>,<Ref2>,
@@ -763,7 +696,197 @@ class SPCmdReplyBase(object): #用于定义 SP reply
         _fields['Initiator']=vks['Initiator']
 
         return self._packaging(_fields,header)
+
+
+class SPCmdNativeReplyBase(SPCmdReplyBase):
+    def __init__(self,api):
+      super(SPCmdNativeReplyBase,self).__init__(api)
+    def generating_SubscribeTicker_reply(self,vks):
+      return
+    def generating_GetPos_reply(self,vks):
+      return
       
+    def __call__(self,vks):
+        # print 'in SPCmdReplyBase __call__'
+        funcName="generating_%s_reply" % vks['FuncName']
+        return getattr(self,funcName)(vks)
+    
+
+class SPCmdSocket(SPCmd):  # Used in client side, send cmds to API
+    def ChangePassword(self, old_psw, new_psw):
+        pass
+    def GetPosCount(self):
+        MessageId='3187'
+        object = SPCommObject()
+        object.CmdType = 'CA'
+        object.CmdDataBuf = '%s,0,%s,%s' % (MessageId,prod_code,0)
+        objectstr = object.pack()
+        print "Packet lenght:%s" % len(objectstr)
+        print "'%s'" % objectstr
+        return self.execute_cmd(objectstr)        
+    def GetPos(self, idx, pos):
+        MessageId='3187'
+        object = SPCommObject()
+        object.CmdType = 'CA'
+        object.CmdDataBuf = '%s,0,%s,%s' % (MessageId,prod_code,0)
+        objectstr = object.pack()
+        print "Packet lenght:%s" % len(objectstr)
+        print "'%s'" % objectstr
+        return self.execute_cmd(objectstr)
+    def SubscribePrice(self, prod_code, mode):
+        pass
+    
+    def SubscribeTicker(self, prod_code, mode):
+        MessageId = '5107' if (mode==1 or mode=='1') else '5108'
+        object = SPCommObject()
+        object.CmdType = 'CA'
+        object.CmdDataBuf = '%s,0,%s,%s' % (MessageId,prod_code,0)
+        objectstr = object.pack()
+        print "Packet lenght:%s" % len(objectstr)
+        print "'%s'" % objectstr
+        return self.execute_cmd(objectstr)
+
+
+class SPCmdNative(SPCmd):
+    def __init__(self,api):
+        super(SPCmdNative,self).__init__(api)
+        self.spCommObject = SPCommObject()
+        self.spCommObject.CmdType = 'CB'  
+         
+    #/*请求方法*/
+    def GetDLLVersion(self):
+        return
+    def SetLoginInfo(self, host, port, _license, app_id, user_id, password):
+        return
+    def Login(self):
+        return
+    def Logout(self):
+        return
+    def GetLoginStatus(self, host_id):
+        return
+    def AddOrder(self,order):
+        return
+    def ChangeOrder(self, order, org_price, org_qty):
+        return
+    def DeleteOrder(self, order):
+        return
+    def ActivateOrder(self, order):
+        return
+    def InactivateOrder(self, order):
+        return
+    def GetOrderCount(self): 
+        return
+    def GetOrder(self, idx, order):
+        return
+    def GetOrderByOrderNo(self, acc_no, int_order_no, order):
+        return
+    def GetPosCount(self): 
+        return
+    def GetPos(self, idx, pos):
+        return
+    def GetPosByProduct(self, prod_code, pos):
+        return
+    def GetTradeCount(self):  
+        return
+    def GetTrade(self, idx, trade):
+        return
+    def GetTradeByTradeNo(self, int_order_no, trade_no, trade):
+        return
+    def SubscribePrice(self, prod_code, mode):
+        return
+    def GetPriceCount(self):   
+        return
+    def GetPrice(self, idx, price):
+        return
+    def GetPriceByCode(self, prod_code, price):
+        return
+    def GetInstrumentCount(self):     
+        return
+    def GetInstrument(self, idx, inst):
+        return
+    def GetInstrumentByCode(self, inst_code, inst):
+        return
+    def GetProductCount(self):      
+        return
+    def GetProduct(self, idx,  prod):
+        return
+    def GetProductByCode(self, prod_code, prod):
+        return
+    def SubscribeTicker(self, prod_code, mode):
+        FuncVKS={'FuncName':'SubscribeTicker'}
+        self.spCommObject.CmdDataBuf = pickle.dumps(FuncVKS)
+        objectstr = object.pack()
+        print "Packet lenght:%s" % len(objectstr)
+        print "'%s'" % objectstr
+        return objectstr
+    def GetAccInfo(self, acc_info):
+        return
+    def GetAccBalCount(self):
+        return
+    def GetAccBal(self, idx, acc_bal):
+        return
+    def GetAccBalByCurrency(self, ccy, acc_bal):
+        return
+    def GetDllVersion(self, dll_ver_no, dll_rel_no, dll_suffix):
+        return
+    def LoadOrderReport(self, acc_no):
+        return
+    def LoadTradeReport(self, acc_no):
+        return
+    def LoadInstrumentList(self):
+        return
+    def LoadProductInfoList(self):
+        return
+    def LoadProductInfoListByCode(self, inst_code):
+        return
+    def ChangePassword(self, old_psw, new_psw): 
+        return
+    def AccountLogin(self, acc_no): 
+        return
+    def AccountLogout(self, acc_no):
+        return
+    def SetApiLogPath(self, path):
+        return
+    def SendAccControl(self, acc_no, ctrl_mask, ctrl_level):
+        return
+    def GetCcyRateCount(self):
+        return
+    def GetCcyRate(self, idx, ccy_rate):
+        return
+    def GetCcyRateByCcy(self, ccy, rate):   
+        return
+
+class SPCmdProcess(object):
+    spCmd = None
+    spCmdReply = None
+    def __init__(self,api):
+        self.spApi = api
+        self.spCmd = SPCmd(api)
+        self.spCmdReply = SPCmdReplyBase(api)
+        
+    def execute_cmd(self,cmdStr):
+        print 'before execute_cmd'
+        self.spCmd.execute_cmd(cmdStr)
+        print 'after execute_cmd'
+
+        # self.spCmdReply.test(self.spCmd.MessageId, self.spCmd._fields)
+        return self.spCmdReply.__call__(self.spCmd.MessageId,self.spCmd._fields)        
+        
+class SPCmdNativeProcess(object):
+    spCmd = None
+    spCmdReply = None
+    def __init__(self,api):
+        self.spApi = api
+        self.spCmd = SPCmdNative(api)
+        self.spCmdReply = SPCmdReplyBase(api)
+        
+    def execute_cmd(self,cmdStr):
+        print 'before execute_cmd'
+        self.spCmd.execute_cmd(cmdStr)
+        print 'after execute_cmd'
+
+        # self.spCmdReply.test(self.spCmd.MessageId, self.spCmd._fields)
+        return self.spCmdReply.__call__(self.spCmd.MessageId,self.spCmd._fields)     
         
 #for test
 if __name__ == '__main__':
@@ -773,8 +896,8 @@ if __name__ == '__main__':
     #
     # c = cmd('3121,0,1000,0')
     # print c
-
-    mySPAPI = spapi.spapi()
+    from spapi import spapi
+    mySPAPI = spapi()
     cmd = SPCmd(mySPAPI)
     cmd.execute_cmd('5107,0,HSIH0,0')
 

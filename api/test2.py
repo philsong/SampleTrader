@@ -29,7 +29,8 @@ class ZoeDataThread(Thread):
         self.connHQServer()
 
     def initLocalVars(self):
-        self.hqServerIP = '14.136.212.219'
+        #self.hqServerIP = '14.136.212.219'
+        self.hqServerIP = '10.68.89.100'
         self.SubtoString = "tcp://%s:%s"  % (self.hqServerIP,ZoeDef.forwarder_backend_port)
 
     def connHQServer(self):
@@ -42,7 +43,7 @@ class ZoeDataThread(Thread):
 
     def run(self):
         #self.threads['zoeloopTicker'] = ZoeLoopTicker(self)
-        self.threads['zoeloopTicker'] = Thread(target=ZoeDataThread.zoeloopTicker,args=(self))
+        self.threads['zoeloopTicker'] = Thread(target=ZoeDataThread.zoeloopTicker,args=(self,))
         self.threads['zoeloopTicker'].start()
         Tsender = self.context.socket(zmq.PAIR)
         Tsender.connect("inproc://ticker")
@@ -69,6 +70,7 @@ class ZoeDataThread(Thread):
             print 'data 2 :' , data
             # if len( data ) == 4:
 
+'''
 class ZoeLoopTicker(Thread):
     def __init__(self,p_parent):
         super(ZoeLoopTicker,self).__init__()
@@ -81,7 +83,7 @@ class ZoeLoopTicker(Thread):
             data = Treceiver.recv_json()
             print 'data 2 :' , data
             # if len( data ) == 4:
-
+'''
 
 
 
@@ -89,11 +91,11 @@ if __name__ == '__main__':
 
     context = zmq.Context.instance()
     m1 = context.socket(zmq.REQ)
-    m1.connect("tcp://%s:%d" % ('14.136.212.219',8197))
-    
+    #m1.connect("tcp://%s:%d" % ('14.136.212.219',8197))
+    m1.connect("tcp://%s:%d" % ('10.68.89.100',8197))
     hqdata = ZoeDataThread()
     hqdata.start()
-    
+    Contracts = ('6EZ5',)   
     object = SPCommObject()
     for c in Contracts:
         object.CmdType = 'CA'
