@@ -28,8 +28,7 @@ from ZoeData import Base,TTicker,TPrice,TK1MIN,TK1HOUR,TK1DAY,TK1MONTH
 import sys
 import time
 from datetime import datetime
-import thread
-import threading
+from threading import Thread
 import unittest
 
 import zmq
@@ -60,7 +59,7 @@ if sys.getdefaultencoding() != 'utf-8':
 
 loop = IOLoop.instance()
 
-class ZoeDataProcessThread( threading.Thread ):
+class ZoeDataProcessThread( Thread ):
     global runflagZoeHQ1, runflagZoeHQ2
     hqdb = None
     hq_receive = None
@@ -71,6 +70,8 @@ class ZoeDataProcessThread( threading.Thread ):
     runflagZoeHQ = False 
     runflagZoeHQ1 = False   
     runflagZoeHQ2 = False   
+    runflagZoeHQ3 = False   
+    threads = {}
     
     
     def __init__( self, **vks ):
@@ -139,19 +140,26 @@ class ZoeDataProcessThread( threading.Thread ):
     
 
     def __del__( self ):
-        runflagZoeHQ1=False
-        #self.sqlCmds
-        runflagZoeHQ2=False
+        self.loopbreak()
         #self.hqdb.close()
+        for t in self.threads:
+            t.join()
         
     def zoeDealHQHistory(self):
         _now = datetime.now()
+        self.runflagZoeHQ3 = True
 
     def run( self ):
-        thread.start_new_thread(self.zoeloopSave2DB,())
-        thread.start_new_thread(self.zoeloopTicker,())
-        thread.start_new_thread(self.zoeloopPrice,())
-        thread.start_new_thread(self.zoeDealHQHistory,())
+        self.threads['zoeloopSave2DB'] = Thread( target=ZoeDataProcessThread.zoeloopSave2DB, args=(self,))
+        #thread.start_new_thread(self.zoeloopSave2DB,())
+        self.threads['zoeloopTicker'] = Thread(target=ZoeDataProcessThread.zoeloopTicker, args=(self,))
+        #thread.start_new_thread(self.zoeloopTicker,())
+        self.threads['zoeloopPrice'] = Thread(target=ZoeDataProcessThread.zoeloopPrice, args=(self,))
+        #thread.start_new_thread(self.zoeloopPrice,())
+        self.threads['zoeDealHQHistory'] = Thread(target=ZoeDataProcessThread.zoeDealHQHistory, args=(self,))
+        #thread.start_new_thread(self.zoeDealHQHistory,())
+        for k in self.threads.keys():
+            self.threads[k].start()
         time.sleep(1)
         print('Begin loop!')
         #self.frontend_socket.recv()
@@ -174,16 +182,19 @@ class ZoeDataProcessThread( threading.Thread ):
                         Tsender.send_json(data)
                 except ValueError ,e:
                     print "Error:",e
-                    
-
+                except KeyboardInterrupt ,e:
+                    print( "Bye Bye!")
+                    raise                    
+                except Exception , e:
+                    print "Error:",e
         
     def zoeloopTicker( self ):
-        runflagZoeHQ1 = True
+        self.runflagZoeHQ1 = True
         session = self.Session()
         runflagZoeHQ = True
         Treceiver = self.context.socket(zmq.PAIR)
         Treceiver.bind("inproc://ticker")
-        while ( runflagZoeHQ1 ):
+        while ( self.runflagZoeHQ1 ):
                 data = Treceiver.recv_json()
                 if len( data ) == 4:
                     data['fTimeStamp'] = datetime.utcfromtimestamp(data['fTimeStamp'])
@@ -193,11 +204,11 @@ class ZoeDataProcessThread( threading.Thread ):
                     print "%(fProductId)4s: %(fPrice)10s %(fQty)10s" % data
 
     def zoeloopSave2DB( self ):
-        runflagZoeHQ = True
+        self.runflagZoeHQ = True
         session = self.Session()        
         receiver = self.context.socket(zmq.PAIR)
         receiver.bind("inproc://hq")
-        while ( runflagZoeHQ ):
+        while ( self.runflagZoeHQ ):
                 data=[]
                 data = receiver.recv_multipart()
                 MsgID=data[0]
@@ -224,11 +235,11 @@ class ZoeDataProcessThread( threading.Thread ):
                     self.hqdb.execute( sql )
                     
     def zoeloopPrice( self ):
-        runflagZoeHQ2 = True
+        self.runflagZoeHQ2 = True
         session = self.Session()
         Preceiver = self.context.socket(zmq.PAIR)
         Preceiver.bind("inproc://price")        
-        while ( runflagZoeHQ2 ):
+        while ( self.runflagZoeHQ2 ):
                     data=[]
                     data = Preceiver.recv_multipart()
                     l = len(data)
@@ -278,7 +289,7 @@ if __name__ == "__main__":
     import argparse
     __author__ = 'TianJun'
     parser = argparse.ArgumentParser(description='This is a Data Server by TianJun.')
-    parser.add_argument('-i','--HQServerIP', help='ZoeDevice Server IP.',required=False)
+    parser.add_argument('-s','--HQServerIP', help='ZoeDevice Server IP.',required=False)
     parser.add_argument('-d','--DBServerIP', help='ZoeMySQL Server IP.',required=False)    
     args = parser.parse_args()
     pa = {'HQServerIP':'14.136.212.219','DBServerIP':'127.0.0.1'}

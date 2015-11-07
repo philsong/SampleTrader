@@ -126,6 +126,14 @@ class SPApiPos(Structure):
         ('ProdCode',     c_char * 16),          #合约代码 
         ('LongShort',     c_char),           #上日持仓买卖方向
         ('DecInPrice',     c_int8) ]         #tinyint小数点
+    def zoeGetDict(self):
+        _keys = [k[0] for k in self._fields_]
+        return {k:getattr(self,k) for k in _keys}
+    def zoeSetDict(self,vks):
+        _keys = [k[0] for k in self._fields_]
+        for k in _keys:
+            if vks.has_key(k):
+                setattr(self,k,vks[k])
 
 class SPApiOrder(Structure):
     _fields_ = [
@@ -159,7 +167,14 @@ class SPApiOrder(Structure):
     ('ValidType',     c_int8),         #订单有效类型
     ('Status',     c_int8),            #状态 
     ('DecInPrice',     c_int8) ]        #合约小数位  
-
+    def zoeGetDict(self):
+        _keys = [k[0] for k in self._fields_]
+        return {k:getattr(self,k) for k in _keys}
+    def zoeSetDict(self,vks):
+        _keys = [k[0] for k in self._fields_]
+        for k in _keys:
+            if vks.has_key(k):
+                setattr(self,k,vks[k])
 
 class SPApiTrade(Structure):
     _fields_ = [
@@ -181,7 +196,14 @@ class SPApiTrade(Structure):
     ('OpenClose',     c_char),            #开平仓
     ('Status',     c_int8),            #状态
     ('DecInPrice',     c_int8)]       #小数位
-
+    def zoeGetDict(self):
+        _keys = [k[0] for k in self._fields_]
+        return {k:getattr(self,k) for k in _keys}
+    def zoeSetDict(self,vks):
+        _keys = [k[0] for k in self._fields_]
+        for k in _keys:
+            if vks.has_key(k):
+                setattr(self,k,vks[k])
 
 class SPApiInstrument(Structure):
     _fields_ = [
@@ -195,9 +217,14 @@ class SPApiInstrument(Structure):
     ('Ccy',     c_char * 4),              #STR4 产品系列的交易币种
     ('DecInPrice',     c_int8),     #产品系列的小数位
     ('InstType',     c_char) ]          #产品系列的类型
-    def getDict(self):
-         return dict([(j,getattr(self,j)) for j in [i[0] for i in self._fields_]])
-
+    def zoeGetDict(self):
+        _keys = [k[0] for k in self._fields_]
+        return {k:getattr(self,k) for k in _keys}
+    def zoeSetDict(self,vks):
+        _keys = [k[0] for k in self._fields_]
+        for k in _keys:
+            if vks.has_key(k):
+                setattr(self,k,vks[k])
 
 class SPApiProduct(Structure):
     _fields_ = [
@@ -214,9 +241,15 @@ class SPApiProduct(Structure):
    ('ProdName2',     c_char * 40),         #STR40 产品简体名称
    ('OptStyle',     c_char),            #期权的类型
    ('TickSize',     c_long) ]           #产品价格最小变化位数
-    def getDict(self):
-         return dict([(j,getattr(self,j)) for j in [i[0] for i in self._fields_]])
-
+    def zoeGetDict(self):
+        _keys = [k[0] for k in self._fields_]
+        return {k:getattr(self,k) for k in _keys}
+    def zoeSetDict(self,vks):
+        _keys = [k[0] for k in self._fields_]
+        for k in _keys:
+            if vks.has_key(k):
+                setattr(self,k,vks[k])
+                
 class SPApiPrice(Structure):
     _fields_ = [
     ('Bid',     c_double * SP_MAX_DEPTH),     #买入价 
@@ -240,6 +273,14 @@ class SPApiPrice(Structure):
     ('ProdCode',     c_char * 16),               #STR16 合约代码
     ('ProdName',     c_char * 40),               #STR40 合约名称
     ('DecInPrice',     c_int8) ]              #合约小数位 
+    def zoeGetDict(self):
+        _keys = [k[0] for k in self._fields_]
+        return {k:getattr(self,k) for k in _keys}
+    def zoeSetDict(self,vks):
+        _keys = [k[0] for k in self._fields_]
+        for k in _keys:
+            if vks.has_key(k):
+                setattr(self,k,vks[k])    
     def __str__(self):
         return "$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s" % (
         self.Bid,self.BidQty,self.BidTicket,self.Ask,self.AskQty,self.AskTicket,self.Last,
@@ -247,8 +288,6 @@ class SPApiPrice(Structure):
         self.OpenInt,self.ProdCode,self.ProdName,self.DecInPrice )
     def __expr__(self):
         return self.__str__()
-    def getDict(self):
-        return {'ProdCode':self.ProdCode,'Open':self.Open,'High':self.High,'Low':self.Low,'Close':self.Close,'TurnoverVol':self.TurnoverVol,'TurnoverAmt':self.TurnoverAmt}
     def zoestr(self):
         return "$s4:$s|$s|$s|$s|$s|$s" % (self.ProdCode,self.Open,self.High,self.Low,self.Close,self.TurnoverVol,self.TurnoverAmt)
     def __cmp__(self, other):
@@ -262,13 +301,18 @@ class SPApiTicker(Structure):
     ('DealSrc',     c_long),              #来源
     ('ProdCode',     c_char * 16),        #STR16 合约代码
     ('DecInPrice',     c_int8) ]          #小数位
+    def zoeGetDict(self):
+        _keys = [k[0] for k in self._fields_]
+        return {k:getattr(self,k) for k in _keys}
+    def zoeSetDict(self,vks):
+        _keys = [k[0] for k in self._fields_]
+        for k in _keys:
+            if vks.has_key(k):
+                setattr(self,k,vks[k])
     def __str__(self):
         return "%s|%s|%s|%s|%s|%s" % (self.ProdCode,self.Price,self.DecInPrice,self.Qty,self.TickerTime,self.DealSrc)
     def __expr__(self):
         return self.__str__()
-    def getDict(self):
-        #return {'fProductId':self.ProdCode, 'fPrice':self.Price, 'fQty':self.Qty, 'fTimeStamp':datetime.datetime.utcfromtimestamp(self.TickerTime)}
-        return {'fProductId':self.ProdCode, 'fPrice':self.Price, 'fQty':self.Qty, 'fTimeStamp':self.TickerTime}
     def zoestr(self):
         return "%4s:%10s:%10s" % (self.ProdCode,self.Price,self.Qty)
     def __cmp__(self, other):
@@ -302,6 +346,14 @@ class SPApiAccInfo(Structure):
     ('CtrlLevel',     c_char),           #控制級數
     ('Active',     c_char),              #生效
     ('MarginPeriod',     c_char) ]        #時段 
+    def zoeGetDict(self):
+        _keys = [k[0] for k in self._fields_]
+        return {k:getattr(self,k) for k in _keys}
+    def zoeSetDict(self,vks):
+        _keys = [k[0] for k in self._fields_]
+        for k in _keys:
+            if vks.has_key(k):
+                setattr(self,k,vks[k])
 
 
 class SPApiAccBal(Structure):
@@ -312,12 +364,28 @@ class SPApiAccBal(Structure):
     ('Unpresented',     c_double),     #未兑现 
     ('TodayOut',     c_double),        #提取要求
     ('Ccy',     c_char * 4) ]               #STR4货币
+    def zoeGetDict(self):
+        _keys = [k[0] for k in self._fields_]
+        return {k:getattr(self,k) for k in _keys}
+    def zoeSetDict(self,vks):
+        _keys = [k[0] for k in self._fields_]
+        for k in _keys:
+            if vks.has_key(k):
+                setattr(self,k,vks[k])
 
 
 class SPApiCcyRate(Structure):
     _fields = [
     ('Ccy',     c_char * 4),
     ('Rate',    c_double) ]
+    def zoeGetDict(self):
+        _keys = [k[0] for k in self._fields_]
+        return {k:getattr(self,k) for k in _keys}
+    def zoeSetDict(self,vks):
+        _keys = [k[0] for k in self._fields_]
+        for k in _keys:
+            if vks.has_key(k):
+                setattr(self,k,vks[k])
 
 
 #define Error Message

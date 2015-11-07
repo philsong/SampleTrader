@@ -3,7 +3,8 @@
 
 
 import zmq
-# import ZoeCmds
+import ZoeDef
+import ZoeCmds
 
 from ZoeCmds import SPCommObject
 import threading

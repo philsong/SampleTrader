@@ -1,3 +1,12 @@
 *.pyc
 *.log
-api/ZoeCmds.pyc
+*.bat
+
+data/*.pyc
+data/*.bat
+api/*.pyc
+api/*.bat
+api/*.log
+devices/*.pyc
+devices/*.bat
+

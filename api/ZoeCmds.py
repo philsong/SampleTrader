@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-import ZoeDef
+from ZoeDef import *
 import struct
 import pickle
-
-
+import inspect
+import sys
+#import pdb
 
 class SPCmdBase(object): #用于定义 SP 命令
     def __init__(self,api):
@@ -16,7 +17,11 @@ class SPCmdBase(object): #用于定义 SP 命令
         self._cv = cmdStr.split(',')
         self.MessageId = self._cv[0]
         funcName = "parse_cmd_%s" % self.MessageId
-        return getattr(self,funcName)(self.cmdStr)
+        if hasattr(self,funcName):
+            return self.MessageId,getattr(self,funcName)(self.cmdStr)
+        else:
+            return None,None
+
 
     def _splitCmd(self,cmdStr,Header):
         _ch = Header
@@ -225,14 +230,25 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
     def __init__(self,buf = None):
         if buf:
             self.unpack(buf)
-    
+
+    def __call__(self,buf):
+        self.unpack(buf)   
+                 
     @property
     def PktLen(self):
         return 35+8+len(self.CmdDataBuf)
     @PktLen.setter
     def PktLen(self,value):
         self._PktLen = value
-    
+        
+    @property
+    def MessageReply(self):
+        raise RuntimeError('MessageReply can not read!')
+        
+    @MessageReply.setter
+    def MessageReply(self,value):
+        self.CmdDataBuf = value    
+        
     @property
     def ZipFlag(self):
         return self._ZipFlag
@@ -279,9 +295,10 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
         self.MAC = buf[-8:]
         self.CmdDataBuf = buf[35:-8]
         self.__unpackHead()
-        
 
-  
+    def __str__(self):
+        return self.pack()
+
 
 class SPCmd(SPCmdBase): #用于定义 SP 命令
     # def __int__(self,api):
@@ -313,7 +330,7 @@ class SPCmd(SPCmdBase): #用于定义 SP 命令
         return order
 
     def execute_cmd(self, cmdStr):
-        print 'in execute_cmd ' , cmdStr
+        #print 'in execute_cmd ' , cmdStr
         _cmd = self.__call__(cmdStr)
         self.MessageId = _cmd[0]
         self._fields = _cmd[1]
@@ -701,16 +718,22 @@ class SPCmdReplyBase(object): #用于定义 SP reply
 class SPCmdNativeReplyBase(SPCmdReplyBase):
     def __init__(self,api):
       super(SPCmdNativeReplyBase,self).__init__(api)
-    def generating_SubscribeTicker_reply(self,vks):
-      return
-    def generating_GetPos_reply(self,vks):
-      return
-      
-    def __call__(self,vks):
+    '''  
+    def generating_SubscribeTicker_reply(self,FuncName,vks):
+      return self._packaging(FuncName,vks)
+    def generating_GetPos_reply(self,FuncName,vks):
+      return self._packaging(FuncName,vks)
+    def generating_AddOrder_reply(self,FuncName,vks):
+      return self._packaging(FuncName,vks)      
+    '''
+    def __call__(self,FuncName,vks):
         # print 'in SPCmdReplyBase __call__'
-        funcName="generating_%s_reply" % vks['FuncName']
-        return getattr(self,funcName)(vks)
-    
+        #funcName="generating_%s_reply" % FuncName
+        #return getattr(self,funcName)(funcName,vks)
+        return self._packaging(FuncName,vks)
+    def _packaging(self,FuncName,vks):  
+        return pickle.dumps([FuncName,vks])
+     
 
 class SPCmdSocket(SPCmd):  # Used in client side, send cmds to API
     def ChangePassword(self, old_psw, new_psw):
@@ -752,109 +775,307 @@ class SPCmdNative(SPCmd):
         super(SPCmdNative,self).__init__(api)
         self.spCommObject = SPCommObject()
         self.spCommObject.CmdType = 'CB'  
-         
+        
+    def execute_cmd(self, cmdStr):
+        #print 'in execute_cmd ' , cmdStr
+        _cmd = pickle.loads(cmdStr)
+        self.FuncName = _cmd[0]
+        self._fields = _cmd[1]
+        if hasattr(self,self.FuncName):
+            return getattr(self,self.FuncName)(self._fields) 
+        else:
+            return -99   # default Error Return code
+                        
     #/*请求方法*/
-    def GetDLLVersion(self):
-        return
-    def SetLoginInfo(self, host, port, _license, app_id, user_id, password):
-        return
-    def Login(self):
-        return
-    def Logout(self):
-        return
-    def GetLoginStatus(self, host_id):
-        return
-    def AddOrder(self,order):
-        return
-    def ChangeOrder(self, order, org_price, org_qty):
-        return
-    def DeleteOrder(self, order):
-        return
-    def ActivateOrder(self, order):
-        return
-    def InactivateOrder(self, order):
-        return
-    def GetOrderCount(self): 
-        return
-    def GetOrder(self, idx, order):
-        return
-    def GetOrderByOrderNo(self, acc_no, int_order_no, order):
-        return
-    def GetPosCount(self): 
-        return
-    def GetPos(self, idx, pos):
-        return
-    def GetPosByProduct(self, prod_code, pos):
-        return
-    def GetTradeCount(self):  
-        return
-    def GetTrade(self, idx, trade):
-        return
-    def GetTradeByTradeNo(self, int_order_no, trade_no, trade):
-        return
-    def SubscribePrice(self, prod_code, mode):
-        return
-    def GetPriceCount(self):   
-        return
-    def GetPrice(self, idx, price):
-        return
-    def GetPriceByCode(self, prod_code, price):
-        return
-    def GetInstrumentCount(self):     
-        return
-    def GetInstrument(self, idx, inst):
-        return
-    def GetInstrumentByCode(self, inst_code, inst):
-        return
-    def GetProductCount(self):      
-        return
-    def GetProduct(self, idx,  prod):
-        return
-    def GetProductByCode(self, prod_code, prod):
-        return
-    def SubscribeTicker(self, prod_code, mode):
-        FuncVKS={'FuncName':'SubscribeTicker'}
-        self.spCommObject.CmdDataBuf = pickle.dumps(FuncVKS)
-        objectstr = object.pack()
-        print "Packet lenght:%s" % len(objectstr)
-        print "'%s'" % objectstr
-        return objectstr
-    def GetAccInfo(self, acc_info):
-        return
-    def GetAccBalCount(self):
-        return
-    def GetAccBal(self, idx, acc_bal):
-        return
-    def GetAccBalByCurrency(self, ccy, acc_bal):
-        return
-    def GetDllVersion(self, dll_ver_no, dll_rel_no, dll_suffix):
-        return
-    def LoadOrderReport(self, acc_no):
-        return
-    def LoadTradeReport(self, acc_no):
-        return
-    def LoadInstrumentList(self):
-        return
-    def LoadProductInfoList(self):
-        return
-    def LoadProductInfoListByCode(self, inst_code):
-        return
-    def ChangePassword(self, old_psw, new_psw): 
-        return
-    def AccountLogin(self, acc_no): 
-        return
-    def AccountLogout(self, acc_no):
-        return
-    def SetApiLogPath(self, path):
-        return
-    def SendAccControl(self, acc_no, ctrl_mask, ctrl_level):
-        return
-    def GetCcyRateCount(self):
-        return
-    def GetCcyRate(self, idx, ccy_rate):
-        return
-    def GetCcyRateByCcy(self, ccy, rate):   
-        return
+    def GetDLLVersion(self,vks):
+        returnCode =  self.spApi.GetDLLVersion()
+        vks['returnCode']=returnCode
+        return returnCode
+    def SetLoginInfo(self, vks):
+        host = vks['host']; port = vks['port']; _license = vks['_license']; app_id = vks['app_id']; user_id = vks['user_id']; password = vks['password']
+        returnCode =  self.spApi.SetLoginInfo(host, port, _license, app_id, user_id, password)
+        vks['returnCode']=returnCode
+        return returnCode
+    def Login(self,vks):
+        returnCode =  self.spApi.Login()
+        vks['returnCode']=returnCode
+        return returnCode
+    def Logout(self,vks):
+        returnCode =  self.spApi.Logout()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetLoginStatus(self, vks):
+        host_id = vks['host_id']
+        returnCode =  self.spApi.GetLoginStatus(host_id)
+        vks['returnCode']=returnCode
+        return returnCode
+    def AddOrder(self,vks):
+        order = SPApiOrder()
+        order.zoeSetDict(vks['order'])
+        returnCode =  self.spApi.AddOrder(order)
+        vks['order']=order.zoeGetDict()
+        vks['returnCode']=returnCode        
+        return returnCode
+    def ChangeOrder(self,vks):
+        order = SPApiOrder()
+        order.zoeSetDict(vks['order'])        
+        org_price = vks['org_price']; org_qty = vks['org_qty']
+        returnCode =  self.spApi.ChangeOrder(order, org_price, org_qty)
+        vks['order']=order.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def DeleteOrder(self, vks):
+        order = SPApiOrder()
+        order.zoeSetDict(vks['order'])      
+        returnCode =  self.spApi.ChangeOrder(order)
+        vks['order']=order.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def ActivateOrder(self, vks):
+        order = SPApiOrder()
+        order.zoeSetDict(vks['order'])       
+        returnCode =  self.spApi.ActivateOrder(order)
+        vks['order']=order.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def InactivateOrder(self, vks):
+        order = SPApiOrder()
+        order.zoeSetDict(vks['order'])       
+        returnCode =  self.spApi.InactivateOrder(order)
+        vks['order']=order.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetOrderCount(self,vks): 
+        returnCode =  self.spApi.GetOrderCount()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetOrder(self, vks):
+        order = SPApiOrder()
+        order.zoeSetDict(vks['order'])       
+        idx = vks['idx']
+        returnCode =  self.spApi.GetOrder(idx, order)
+        vks['order']=order.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetOrderByOrderNo(self, vks):
+        order = SPApiOrder()
+        order.zoeSetDict(vks['order'])        
+        acc_no = vks['acc_no']; int_order_no = vks['int_order_no']
+        returnCode =  self.spApi.GetOrderByOrderNo(acc_no, int_order_no, order)
+        vks['order']=order.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetPosCount(self,vks): 
+        returnCode =  self.spApi.GetPosCount()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetPos(self, vks): #SPApiPos
+        pos = SPApiPos()
+        pos.zoeSetDict(vks['pos'])   
+        idx = vks['idx']
+        returnCode =  self.spApi.GetPos(idx, pos)
+        vks['pos']=pos.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetPosByProduct(self, vks):
+        pos = SPApiPos()
+        pos.zoeSetDict(vks['pos'])   
+        prod_code = vks['prod_code'] 
+        returnCode =  self.spApi.GetPosByProduct(prod_code, pos)
+        vks['pos']=pos.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetTradeCount(self,vks):  
+        returnCode =  self.spApi.GetTradeCount()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetTrade(self, vks): #SPApiTrade
+        trade = SPApiTrade()
+        trade.zoeSetDict(vks['trade'])   
+        idx = vks['idx']
+        returnCode =  self.spApi.GetTrade(idx, trade)
+        vks['trade']=trade.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetTradeByTradeNo(self, vks):
+        trade = SPApiTrade()
+        trade.zoeSetDict(vks['trade'])   
+        int_order_no = vks['int_order_no']; trade_no = vks['trade_no']
+        returnCode =  self.spApi.GetTradeByTradeNo(int_order_no, trade_no, trade)
+        vks['trade']=trade.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def SubscribePrice(self, vks):
+        prod_code = vks['prod_code']; mode = vks['mode']
+        returnCode =  self.spApi.SubscribePrice(prod_code, mode)
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetPriceCount(self,vks):   
+        returnCode =  self.spApi.GetPriceCount()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetPrice(self, vks): #SPApiPrice
+        price = SPApiPrice()
+        price.zoeSetDict(vks['price'])   
+        idx = vks['idx']
+        returnCode =  self.spApi.GetPrice(idx, price)
+        vks['price']=price.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetPriceByCode(self, vks):
+        price = SPApiPrice()
+        price.zoeSetDict(vks['price'])  
+        prod_code = vks['prod_code']
+        returnCode =  self.spApi.GetPriceByCode(prod_code, price)
+        vks['price']=price.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetInstrumentCount(self,vks):     
+        returnCode =  self.spApi.GetInstrumentCount()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetInstrument(self, vks): #SPApiInstrument
+        inst = SPApiInstrument()
+        inst.zoeSetDict(vks['inst'])   
+        idx = vks['idx']
+        returnCode =  self.spApi.GetInstrument(idx, inst)
+        vks['inst']=inst.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetInstrumentByCode(self, vks):
+        inst = SPApiInstrument()
+        inst.zoeSetDict(vks['inst'])    
+        inst_code = vks['inst_code']
+        returnCode =  self.spApi.GetInstrumentByCode(inst_code, inst)
+        vks['inst']=inst.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetProductCount(self,vks):      
+        returnCode =  self.spApi.GetProductCount()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetProduct(self, vks): #SPApiProduct
+        prod = SPApiProduct()
+        prod.zoeSetDict(vks['prod'])   
+        idx = vks['idx']
+        returnCode =   self.spApi.GetProduct(idx,  prod)
+        vks['prod']=prod.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetProductByCode(self, vks):
+        prod = SPApiProduct()
+        prod.zoeSetDict(vks['prod'])  
+        prod_code = vks['prod_code']
+        returnCode =  self.spApi.GetProductByCode(prod_code, prod)
+        vks['prod']=prod.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def SubscribeTicker(self, vks):
+        prod_code = vks['prod_code'] 
+        mode = vks['mode']     
+        returnCode = self.spApi.SubscribeTicker(prod_code,mode)
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetAccInfo(self, vks): #SPApiAccInfo
+        acc_info = SPApiAccInfo()
+        acc_info.zoeSetDict(vks['acc_info'])   
+        returnCode =  self.spApi.GetAccInfo(acc_info)
+        vks['acc_info']=acc_info.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetAccBalCount(self,vks):
+        returnCode =  self.spApi.GetAccBalCount()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetAccBal(self, vks): #SPApiAccBal
+        acc_bal = SPApiAccBal()
+        acc_bal.zoeSetDict(vks['acc_bal'])   
+        idx = vks['idx']
+        returnCode =  self.spApi.GetAccBal(idx, acc_bal)
+        vks['acc_bal']=acc_bal.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetAccBalByCurrency(self, vks):
+        acc_bal = SPApiAccBal()
+        acc_bal.zoeSetDict(vks['acc_bal'])   
+        ccy = vks['ccy']
+        returnCode =  self.spApi.GetAccBalByCurrency(ccy, acc_bal)
+        vks['acc_bal']=acc_bal.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetDllVersion(self, vks):
+        dll_ver_no = vks['dll_ver_no']; dll_rel_no = vks['dll_rel_no']; dll_suffix = vks['dll_suffix']
+        returnCode =  self.spApi.GetDllVersion(dll_ver_no, dll_rel_no, dll_suffix)
+        vks['returnCode']=returnCode
+        return returnCode
+    def LoadOrderReport(self, vks):
+        acc_no = vks['acc_no']
+        returnCode =  self.spApi.LoadOrderReport(acc_no)
+        vks['returnCode']=returnCode
+        return returnCode
+    def LoadTradeReport(self, vks):
+        acc_no = vks['acc_no']
+        returnCode =  self.spApi.LoadTradeReport(acc_no)
+        vks['returnCode']=returnCode
+        return returnCode
+    def LoadInstrumentList(self,vks):
+        returnCode =  self.spApi.LoadInstrumentList()
+        vks['returnCode']=returnCode
+        return returnCode
+    def LoadProductInfoList(self,vks):
+        returnCode =  self.spApi.LoadProductInfoList()
+        vks['returnCode']=returnCode
+        return returnCode
+    def LoadProductInfoListByCode(self, vks):
+        inst_code = vks['inst_code']
+        returnCode =  self.spApi.LoadProductInfoListByCode(inst_code)
+        vks['returnCode']=returnCode
+        return returnCode
+    def ChangePassword(self, vks): 
+        old_psw = vks['old_psw']; new_psw = vks['new_psw']
+        returnCode =  self.spApi.ChangePassword(old_psw, new_psw)
+        vks['returnCode']=returnCode
+        return returnCode
+    def AccountLogin(self, vks): 
+        acc_no = vks['acc_no']
+        returnCode =  self.spApi.AccountLogin(acc_no)
+        vks['returnCode']=returnCode
+        return returnCode
+    def AccountLogout(self, vks):
+        acc_no = vks['acc_no']
+        returnCode =  self.spApi.AccountLogout(acc_no)
+        vks['returnCode']=returnCode
+        return returnCode
+    def SetApiLogPath(self, vks):
+        path = vks['path']
+        returnCode =  self.spApi.SetApiLogPath(path)
+        vks['returnCode']=returnCode
+        return returnCode
+    def SendAccControl(self, vks):
+        acc_no = vks['acc_no']; ctrl_mask = vks['ctrl_mask']; ctrl_level = vks['ctrl_level']
+        returnCode =  self.spApi.SendAccControl(acc_no, ctrl_mask, ctrl_level)
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetCcyRateCount(self,vks):
+        returnCode =  self.spApi.GetCcyRateCount()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetCcyRate(self, vks): #SPApiCcyRate
+        ccy_rate = SPApiCcyRate()
+        ccy_rate.zoeSetDict(vks['ccy_rate'])   
+        idx = vks['idx']
+        returnCode =  self.spApi.GetCcyRate(idx, ccy_rate)
+        vks['ccy_rate']=ccy_rate.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
+    def GetCcyRateByCcy(self, vks):   
+        ccy_rate = SPApiCcyRate()
+        ccy_rate.zoeSetDict(vks['ccy_rate'])  
+        ccy = vks['ccy']
+        returnCode =  self.spApi.GetCcyRateByCcy(ccy, rate)
+        vks['ccy_rate']=ccy_rate.zoeGetDict()
+        vks['returnCode']=returnCode
+        return returnCode
 
 class SPCmdProcess(object):
     spCmd = None
@@ -865,12 +1086,12 @@ class SPCmdProcess(object):
         self.spCmdReply = SPCmdReplyBase(api)
         
     def execute_cmd(self,cmdStr):
-        print 'before execute_cmd'
+        #print 'before execute_cmd'
         self.spCmd.execute_cmd(cmdStr)
-        print 'after execute_cmd'
+        #print 'after execute_cmd'
 
         # self.spCmdReply.test(self.spCmd.MessageId, self.spCmd._fields)
-        return self.spCmdReply.__call__(self.spCmd.MessageId,self.spCmd._fields)        
+        return self.spCmdReply(self.spCmd.MessageId,self.spCmd._fields)        
         
 class SPCmdNativeProcess(object):
     spCmd = None
@@ -878,15 +1099,322 @@ class SPCmdNativeProcess(object):
     def __init__(self,api):
         self.spApi = api
         self.spCmd = SPCmdNative(api)
-        self.spCmdReply = SPCmdReplyBase(api)
+        self.spCmdReply = SPCmdNativeReplyBase(api)
         
     def execute_cmd(self,cmdStr):
-        print 'before execute_cmd'
+        #print 'before execute_cmd'
         self.spCmd.execute_cmd(cmdStr)
-        print 'after execute_cmd'
+        #print 'after execute_cmd'
 
         # self.spCmdReply.test(self.spCmd.MessageId, self.spCmd._fields)
-        return self.spCmdReply.__call__(self.spCmd.MessageId,self.spCmd._fields)     
+        return self.spCmdReply(self.spCmd.FuncName,self.spCmd._fields)     
+
+
+class SPCmdNativeClient(object):
+    def __init__(self,socket=None):
+        self.spCommObject = SPCommObject()
+        self.spCommObject.CmdType = 'CB'  
+        self.socket=socket
+        
+    def execute_cmd(self, _fields):
+        self.spCommObject.CmdDataBuf = pickle.dumps(_fields)   
+        if  self.socket:
+            self.socket.send_json(self.spCommObject.pack())
+            _revMsg=self.socket.recv_json()
+            self.spCommObject.unpack(_revMsg)
+            return pickle.loads(self.spCommObject.CmdDataBuf)
+        else:
+            return self.spCommObject.pack()
+                 
+    #/*请求方法*/
+    def GetDLLVersion(self):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def SetLoginInfo(self, host, port, _license, app_id, user_id, password):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def Login(self):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def Logout(self):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetLoginStatus(self, host_id):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def AddOrder(self,order):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def ChangeOrder(self, order, org_price, org_qty):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def DeleteOrder(self, order):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def ActivateOrder(self, order):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def InactivateOrder(self, order):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetOrderCount(self): 
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetOrder(self, idx, order):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetOrderByOrderNo(self, acc_no, int_order_no, order):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetPosCount(self): 
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetPos(self, idx, pos):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetPosByProduct(self, prod_code, pos):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetTradeCount(self):  
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetTrade(self, idx, trade):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetTradeByTradeNo(self, int_order_no, trade_no, trade):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def SubscribePrice(self, prod_code, mode):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetPriceCount(self):   
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetPrice(self, idx, price):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetPriceByCode(self, prod_code, price):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetInstrumentCount(self):     
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetInstrument(self, idx, inst):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetInstrumentByCode(self, inst_code, inst):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetProductCount(self):      
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetProduct(self, idx,  prod):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetProductByCode(self, prod_code, prod):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def SubscribeTicker(self, prod_code, mode):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetAccInfo(self, acc_info):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetAccBalCount(self):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetAccBal(self, idx, acc_bal):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetAccBalByCurrency(self, ccy, acc_bal):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetDllVersion(self, dll_ver_no, dll_rel_no, dll_suffix):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def LoadOrderReport(self, acc_no):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def LoadTradeReport(self, acc_no):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def LoadInstrumentList(self):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def LoadProductInfoList(self):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def LoadProductInfoListByCode(self, inst_code):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def ChangePassword(self, old_psw, new_psw): 
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def AccountLogin(self, acc_no): 
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def AccountLogout(self, acc_no):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def SetApiLogPath(self, path):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def SendAccControl(self, acc_no, ctrl_mask, ctrl_level):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetCcyRateCount(self):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetCcyRate(self, idx, ccy_rate):
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
+    def GetCcyRateByCcy(self, ccy, rate):   
+        _fnames = sys._getframe().f_code.co_varnames[1:sys._getframe().f_code.co_argcount]
+        _fields = [sys._getframe().f_code.co_name,{}]
+        for i in _fnames:
+            _fields[1][i]=sys._getframe().f_locals[i]
+        return self.execute_cmd(_fields)
         
 #for test
 if __name__ == '__main__':

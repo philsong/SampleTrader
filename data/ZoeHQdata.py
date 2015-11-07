@@ -20,7 +20,7 @@
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
 
-#��ҪMySQL֧�֣� ���Ƚ���һMySQL���ٽ���һdatabase:hq, ͬʱ����zoe�û���hq������Ȩ�޼��ɣ�
+#ï¿½ï¿½ÒªMySQLÖ§ï¿½Ö£ï¿½ ï¿½ï¿½ï¿½È½ï¿½ï¿½ï¿½Ò»MySQLï¿½ï¿½ï¿½Ù½ï¿½ï¿½ï¿½Ò»database:hq, Í¬Ê±ï¿½ï¿½ï¿½ï¿½zoeï¿½Ã»ï¿½ï¿½ï¿½hqï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¨ï¿½Þ¼ï¿½ï¿½É£ï¿½
 #self.dbapistring = "mysql+mysqldb://zoe:37191196@%s/hq" % self.dbServerIP
 
 
@@ -85,8 +85,8 @@ class ZoeDataThread( threading.Thread ):
         self.hqServerIP = vks['HQServerIP']
         #self.dbapistring = r"sqlite:///c:\zoehq.db3"
         #pdb.set_trace()
-        # self.dbapistring = "mysql+mysqldb://zoe:37191196@%s/hq" % self.dbServerIP
-        self.dbapistring = "mysql+mysqldb://root:123456@%s/hq" % self.dbServerIP
+        self.dbapistring = "mysql+mysqldb://zoe:37191196@%s/hq" % self.dbServerIP
+        #self.dbapistring = "mysql+mysqldb://root:123456@%s/hq" % self.dbServerIP
         if vks.has_key( 'interval' ):
             self.interval = vks['interval']
         if vks.has_key( 'dbapiname' ):
@@ -94,11 +94,11 @@ class ZoeDataThread( threading.Thread ):
         if vks.has_key( 'SubtoString' ):
             self.SubtoString = vks['SubtoString']
         else:
-            self.SubtoString = "tcp://%s:8199"  % self.hqServerIP   #��������
+            self.SubtoString = "tcp://%s:8199"  % self.hqServerIP   #ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         if vks.has_key( 'PubBindString' ):
             self.PubBindString = vks['PubBindString']
         else:
-            self.PubBindString = "tcp://%s:8189" % self.hqServerIP  #��������, ���������DB������
+            self.PubBindString = "tcp://%s:8189" % self.hqServerIP  #ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½DBï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             
             
     def connHQServer(self):
@@ -108,8 +108,8 @@ class ZoeDataThread( threading.Thread ):
         self.context = zmq.Context() # or zmq.Context.instance()   
 
         self.frontend_socket = self.context.socket(zmq.SUB)
-        self.frontend_socket.connect(self.SubtoString)
         self.frontend_socket.setsockopt(zmq.SUBSCRIBE,'')
+        self.frontend_socket.connect(self.SubtoString)
         self.backend_socket = self.context.socket(zmq.PUB)
         self.backend_socket.connect(self.PubBindString)
         
@@ -147,10 +147,7 @@ class ZoeDataThread( threading.Thread ):
     
 
     def __del__( self ):
-        runflagZoeHQ1=False
-        #self.sqlCmds
-        runflagZoeHQ2=False
-        #self.hqdb.close()
+        self.loopbreak()
         
 
     def run( self ):
@@ -171,16 +168,20 @@ class ZoeDataThread( threading.Thread ):
             if socks.get(self.frontend_socket) == zmq.POLLIN:
                 try:
                     _type, data = self.frontend_socket.recv_json()
-                    print _type, data
+                    #print _type, data
                     #(_type,data) = _message['type'], _message['data']
                     if (_type == 'price'):
                         Psender.send_json(data)
                     if (_type == 'ticker'):
                         Tsender.send_json(data)
+                except KeyboardInterrupt ,e:
+                    print( "Bye Bye!")
+                    raise
                 except ValueError ,e:
                     print "Error:",e
                 except Exception , e:
                     print "Error:",e
+
                     
             if socks.get(self.backend_socket) == zmq.POLLIN:
                 
@@ -201,12 +202,12 @@ class ZoeDataThread( threading.Thread ):
 
         
     def zoeloopTicker( self ):
-        runflagZoeHQ1 = True
+        self.runflagZoeHQ1 = True
         session = self.Session()
         runflagZoeHQ = True
         Treceiver = self.context.socket(zmq.PAIR)
         Treceiver.bind("inproc://ticker")
-        while ( runflagZoeHQ1 ):
+        while ( self.runflagZoeHQ1 ):
                 data = Treceiver.recv_json()
                 if len( data ) == 4:
                     data['fTimeStamp'] = datetime.utcfromtimestamp(data['fTimeStamp'])
@@ -226,10 +227,10 @@ class ZoeDataThread( threading.Thread ):
                     print "%(fProductId)4s: %(fPrice)10s %(fQty)10s" % data
 
     def zoeloopSave2DB( self ):
-        runflagZoeHQ = True
+        self.runflagZoeHQ = True
         receiver = self.context.socket(zmq.PAIR)
         receiver.bind("inproc://hq")
-        while ( runflagZoeHQ ):
+        while (self.runflagZoeHQ ):
                 sql = receiver.recv_json()
                 print sql
                 try:
@@ -238,11 +239,11 @@ class ZoeDataThread( threading.Thread ):
                     print "Error:",e 
                     
     def zoeloopPrice( self ):
-        runflagZoeHQ2 = True
+        self.runflagZoeHQ2 = True
         session = self.Session()
         Preceiver = self.context.socket(zmq.PAIR)
         Preceiver.bind("inproc://price")        
-        while ( runflagZoeHQ2 ):
+        while ( self.runflagZoeHQ2 ):
                     data = Preceiver.recv_json()
                     l = len(data)
                     if (l > 8):
@@ -298,7 +299,7 @@ if __name__ == "__main__":
     import argparse
     __author__ = 'TianJun'
     parser = argparse.ArgumentParser(description='This is a Data Server by TianJun.')
-    parser.add_argument('-i','--HQServerIP', help='ZoeDevice Server IP.',required=False)
+    parser.add_argument('-s','--HQServerIP', help='ZoeDevice Server IP.',required=False)
     parser.add_argument('-d','--DBServerIP', help='ZoeMySQL Server IP.',required=False)    
     args = parser.parse_args()
     pa = {'HQServerIP':'14.136.212.219','DBServerIP':'127.0.0.1'}
