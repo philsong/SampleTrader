@@ -29,8 +29,8 @@ class ZoeDataThread(Thread):
         self.connHQServer()
 
     def initLocalVars(self):
-        self.hqServerIP = '14.136.212.219'
-        #self.hqServerIP = '10.68.89.100'
+        #self.hqServerIP = '14.136.212.219'
+        self.hqServerIP = '10.68.89.100'
         self.SubtoString = "tcp://%s:%s"  % (self.hqServerIP,ZoeDef.forwarder_frontend_port)
 
     def connHQServer(self):
@@ -93,8 +93,8 @@ def test1(flag=1):
     context = zmq.Context.instance()
     m1 = context.socket(zmq.REQ)
     m1.setsockopt(zmq.IDENTITY, b"tianjun")
-    m1.connect("tcp://%s:%d" % ('14.136.212.219',8197))
-    #m1.connect("tcp://%s:%d" % ('10.68.89.100',8197))
+    #m1.connect("tcp://%s:%d" % ('14.136.212.219',8197))
+    m1.connect("tcp://%s:%d" % ('10.68.89.100',8197))
     hqdata = ZoeDataThread()
     hqdata.start()
     Contracts = ('6EZ5','GCZ5','CLZ5','NQZ5')   

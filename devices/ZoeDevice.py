@@ -35,6 +35,8 @@ import traceback
 import binascii
 from random import randint
 
+import redis
+
 
 # fix ROUTER/DEALER aliases, missing from pyzmq < 2.1.9
 if not hasattr(zmq, 'ROUTER'):
@@ -95,26 +97,35 @@ class ZoeDevice(object):
         self.pidfile_path = u'/var/run/zoeDevice.pid'
         self.pidfile_timeout = 5
         
+        self.redis = redis.StrictRedis()
         self.expiry = time.time() + HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS
         self.context = zmq.Context.instance()
-        self._validAddress=set()
+        #self._validAddress=set()
         self._loadValidAddress()
-        self._ActivedAddress=set()  # address
+        #self._ActivedAddress=set()  # address
         self.heartbeatclients= {} # 'name':[socket,heartbeat_at]
         self.workers=set()          # [socket, address , ServiceID]
         
     def _loadValidAddress(self): # will using ini file
+        '''
         self._validAddress.add(b'tianjun')
         self._validAddress.add(b'foreseefund')
         self._validAddress.add(b'spapi')
         self._validAddress.add(b'zoedata')
+        '''
+        self.redis.sadd('validAddress',b'tianjun')
+        self.redis.sadd('validAddress',b'foreseefund')
+        self.redis.sadd('validAddress',b'spapi')
+        self.redis.sadd('validAddress',b'zoedata')
    
     def validAddressSUB(self,message):
-        #self.printMessage(message)
+        self.printMessage(message)
         if len(message) == 3:
             _address, _empty, _message = message
-            if (_address in self._validAddress):
-                self._ActivedAddress.add(_address)
+            #if (_address in self._validAddress):
+            if (self.redis.sismember('validAddress',_address)):
+                #self._ActivedAddress.add(_address)
+                self.redis.sadd('ActivedAddress',_address)
                 return True
             else:
                 False
@@ -122,7 +133,8 @@ class ZoeDevice(object):
         
     def printMessage(self,message):
         for part in message:
-            print "[%03d]" % len(part),
+            #print "[%03d]" % len(part),
+            self.redis.publish("DeviceMessage","[%03d]" % len(part))
             is_text = True
             for c in part:
                 if ord(c) < 32 or ord(c) > 128:
@@ -130,18 +142,22 @@ class ZoeDevice(object):
                     break
             if is_text:
                 # print only if ascii text
-                print part
+                #print part
+                self.redis.publish("DeviceMessage",part)
             else:
                 # not text, print hex
-                print binascii.hexlify(part)    
+                #print binascii.hexlify(part)   
+                self.redis.publish("DeviceMessage",binascii.hexlify(part)) 
                     
     def validAddress(self,message,flag=True):
         if (not flag): return True
         self.printMessage(message)
         if len(message) == 3:
             _address, _empty, _message = message
-            if (_address in self._validAddress):
-                self._ActivedAddress.add(_address)
+            #if (_address in self._validAddress):
+            if (self.redis.sismember('validAddress',_address)):
+                #self._ActivedAddress.add(_address)
+                self.redis.sadd('ActivedAddress',_address)
                 return True
         return False
         #raise Exception("InvalidAddress! Message Length:%s" % len(message))
