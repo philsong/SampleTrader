@@ -1,4 +1,4 @@
-python "spapi.py" -d 10.68.89.100 -s 10.68.89.2
+python "spapi.py" install
 
 pause
 del "%0"

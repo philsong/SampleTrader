@@ -185,7 +185,10 @@ class ZoeDevice(object):
         #raise Exception("InvalidAddress! Message Length:%s" % len(message))
     
     def __del__(self):
+        while self.redis.spop('validAddress'):
+            pass
         self.context.term()
+
                  
     def run(self):
         device_monitor  =  self.context.socket(zmq.PUB) 

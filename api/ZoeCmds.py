@@ -2,6 +2,7 @@
 # -*- coding: utf8 -*-
 
 from ZoeDef import *
+import abc
 import struct
 import pickle
 import inspect
@@ -9,6 +10,7 @@ import sys
 #import pdb
 
 class SPCmdBase(object): #用于定义 SP 命令
+    __metaclass__ = abc.ABCMeta
     def __init__(self,api):
         self.spApi = api
             
@@ -22,6 +24,9 @@ class SPCmdBase(object): #用于定义 SP 命令
         else:
             return None,None
 
+    @abc.abstractmethod
+    def execute_cmd(self, cmdStr):
+        raise NotImplementedError()
 
     def _splitCmd(self,cmdStr,Header):
         _ch = Header
