@@ -87,6 +87,28 @@ INTERVAL_MAX = 32
 PPP_READY = "\x01"      # Signals worker is ready
 PPP_HEARTBEAT = "\x02"  # Signals worker heartbeat
 
+# Set simple random printable identity on socket
+def set_id(zsocket):
+    identity = "%04x-%04x" % (randint(0, 0x10000), randint(0, 0x10000))
+    zsocket.setsockopt(zmq.IDENTITY, identity)
+
+def zpipe(ctx):
+    """build inproc pipe for talking to threads
+    
+    mimic pipe used in czmq zthread_fork.
+    
+    Returns a pair of PAIRs connected via inproc
+    """
+    a = ctx.socket(zmq.PAIR)
+    a.linger = 0
+    b = ctx.socket(zmq.PAIR)
+    b.linger = 0
+    a.hwm = 1
+    b.hwm = 1
+    iface = "inproc://%s" % binascii.hexlify(os.urandom(8))
+    a.bind(iface)
+    b.connect(iface)
+    return a,b
 
 
 class ZoeDevice(object):
@@ -119,7 +141,7 @@ class ZoeDevice(object):
         self.redis.sadd('validAddress',b'zoedata')
    
     def validAddressSUB(self,message):
-        self.printMessage(message)
+        self.printMessage(message,channel = "marketdata")
         if len(message) == 3:
             _address, _empty, _message = message
             #if (_address in self._validAddress):
@@ -131,10 +153,10 @@ class ZoeDevice(object):
                 False
         return True
         
-    def printMessage(self,message):
+    def printMessage(self,message,channel = "command"):
         for part in message:
             #print "[%03d]" % len(part),
-            self.redis.publish("DeviceMessage","[%03d]" % len(part))
+            self.redis.publish(channel,"[%03d]" % len(part))
             is_text = True
             for c in part:
                 if ord(c) < 32 or ord(c) > 128:
@@ -143,15 +165,15 @@ class ZoeDevice(object):
             if is_text:
                 # print only if ascii text
                 #print part
-                self.redis.publish("DeviceMessage",part)
+                self.redis.publish(channel,part)
             else:
                 # not text, print hex
                 #print binascii.hexlify(part)   
-                self.redis.publish("DeviceMessage",binascii.hexlify(part)) 
+                self.redis.publish(channel,binascii.hexlify(part)) 
                     
     def validAddress(self,message,flag=True):
         if (not flag): return True
-        self.printMessage(message)
+        self.printMessage(message, channel = "command")
         if len(message) == 3:
             _address, _empty, _message = message
             #if (_address in self._validAddress):
