@@ -1,12 +1,11 @@
-*.pyc
-*.log
-*.bat
+/*
+!/*.py
+!/*.dia
 
-data/*.pyc
-data/*.bat
-api/*.pyc
-api/*.bat
-api/*.log
-devices/*.pyc
-devices/*.bat
+/data/*
+!/data/*.py
+/api/*
+!/api/*.py
+/devices/*
+!/devices/*.py
 
