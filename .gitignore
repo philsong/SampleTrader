@@ -1,11 +1,3 @@
-/*
-!/*.py
-!/*.dia
-
-/data/*
-!/data/*.py
-/api/*
-!/api/*.py
-/devices/*
-!/devices/*.py
-
+**/*
+!**/*.py
+!**/*.dia
