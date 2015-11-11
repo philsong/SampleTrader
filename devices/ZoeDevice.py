@@ -156,7 +156,7 @@ class ZoeDevice(object):
     def printMessage(self,message,channel = "command"):
         for part in message:
             #print "[%03d]" % len(part),
-            self.redis.publish(channel,"[%03d]" % len(part))
+            s1 = "[%03d]" % len(part)
             is_text = True
             for c in part:
                 if ord(c) < 32 or ord(c) > 128:
@@ -164,12 +164,11 @@ class ZoeDevice(object):
                     break
             if is_text:
                 # print only if ascii text
-                #print part
-                self.redis.publish(channel,part)
+                s2 = part
             else:
-                # not text, print hex
-                #print binascii.hexlify(part)   
-                self.redis.publish(channel,binascii.hexlify(part)) 
+                # not text, print hex 
+                s2 = binascii.hexlify(part)
+            self.redis.publish(channel,"{} --- {}".format(s1,s2)) 
                     
     def validAddress(self,message,flag=True):
         if (not flag): return True

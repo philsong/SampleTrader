@@ -7,13 +7,17 @@ import ZoeDef
 import inspect
 import sys
 from ZoeCmds import SPCommObject,SPCmdNativeClient
-from threading import Thread
+from threading import Thread,Event
+from Queue import Empty as EmptyException
+from multiprocessing import JoinableQueue as Queue
 import json
 
 
 s_host = '10.68.89.100'
 #s_host = '14.136.212.219'
 d_host = '14.136.212.219'
+IDENTITY = b'tianjun'
+
 
 Contracts0 = ('CLF6','CLG6','CLH6','CLJ6','CLK6','CLM6','CLN6','CLX5','CLZ5',
             'CNH6','CNM6','CNZ5',
@@ -25,9 +29,44 @@ Contracts0 = ('CLF6','CLG6','CLH6','CLJ6','CLK6','CLM6','CLN6','CLX5','CLZ5',
 #Contracts = Contracts0[8:11] + Contracts0[22:36]      
 Contracts = ('CLZ5','GCZ5','DXZ6')   
 
+
+
+zoePrintQueue = Queue()
+
+
+class PrintLoop(Thread):
+    def __init__(self, log, event):
+        super(PrintLoop,self).__init__()
+        self.log = log
+        self._event = event   
+        assert(event)     
+    def run(self):
+        while (not self._event.is_set()):
+            try:
+                msg = zoePrintQueue.get(True,10) 
+                if self.log:           
+                    self.log.info( msg )
+                else:
+                    print(msg)
+            except EmptyException , e:
+                pass
+        if self.log:
+            self.log.info( ZmqServerThread )
+        else:
+            print("... End PrintLoop! ") 
+            
+def zoePrint(msg):
+    try:
+        zoePrintQueue.put_nowait(msg)
+    except Exception , e:
+        traceback.zoePrint_exc()
+        
+
 class ZoeDataThread(Thread):
-    def __init__(self):
+    def __init__(self,p1=True,p2=False):
         super( ZoeDataThread, self ).__init__()
+        self.p1=p1
+        self.p2=p2
         self.initLocalVars()
         self.connHQServer()
 
@@ -38,95 +77,83 @@ class ZoeDataThread(Thread):
     def connHQServer(self):
         self.context = zmq.Context.instance()# or zmq.Context() 
         self.frontend_socket = self.context.socket(zmq.SUB)
-        #self.frontend_socket.setsockopt(zmq.IDENTITY, b"spapi")
-        #self.frontend_socket.setsockopt(zmq.SUBSCRIBE,b'ticker')
-        self.frontend_socket.setsockopt(zmq.SUBSCRIBE,b'apiReturn')
-        
         self.frontend_socket.connect(self.SubtoString)
+        #self.frontend_socket.setsockopt(zmq.IDENTITY, IDENTITY)
+        if self.p2:
+            self.frontend_socket.setsockopt(zmq.SUBSCRIBE,b'ticker')
+        if self.p1:
+            self.frontend_socket.setsockopt(zmq.SUBSCRIBE,b'apiReturn')
+        #self.frontend_socket.connect(self.SubtoString)
 
-        print("Finished init zmq.")
+        zoePrint("Finished init zmq.")
 
     def run(self):
+        zoePrint("ZoeDataThread is Running...")
         while (True):
             try:
                 _type, data = self.frontend_socket.recv_multipart()
                 if (_type == 'ticker'):
-                    print json.loads(data)
+                    zoePrint("{} -- {}".format(_type, json.loads(data)))
                 if (_type == 'apiReturn'):
-                    print json.loads(data)
+                    zoePrint("{} -- {}".format(_type,json.loads(data)))
             except KeyboardInterrupt ,e:
-                print( "Bye Bye!")
+                zoePrint( "Bye Bye!")
                 raise    
             except ValueError ,e:
-                print "Error:",e
+                zoePrint( "Error:{}".format(e))
             except Exception , e:
-                print "Error:",e
+                zoePrint( "Error:{}".format(e))
 
 
-'''
-class ZoeLoopTicker(Thread):
-    def __init__(self,p_parent):
-        super(ZoeLoopTicker,self).__init__()
-        self._parent = p_parent
-    def run(self):
-        self._parent.runflagZoeHQ1 = True
-        Treceiver = self._parent.context.socket(zmq.PAIR)
-        Treceiver.bind("inproc://ticker")
-        while(self._parent.runflagZoeHQ1):
-            data = Treceiver.recv_json()
-            print 'data 2 :' , data
-            # if len( data ) == 4:
-'''
 
 
 def test1(flag=1):
     context = zmq.Context.instance()
     m1 = context.socket(zmq.REQ)
-    m1.setsockopt(zmq.IDENTITY, b"tianjun")
-    m1.connect("tcp://%s:%d" % (s_host,8197))
-    hqdata = ZoeDataThread()
-    hqdata.start()
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
+    m1.setsockopt(zmq.IDENTITY, IDENTITY)
     Contracts = ('6EZ5','GCZ5','CLZ5','NQZ5')   
     object = SPCommObject()
     for c in Contracts:
         object.CmdType = 'CA'
         object.CmdDataBuf = '5108,0,%s,%s' % (c,flag)
         objectstr = object.pack()
-        print "Packet lenght:%s" % len(objectstr)
-        print "'%s'" % objectstr
+        zoePrint("Packet lenght:{}".format(len(objectstr)))
+        zoePrint("{}".format(objectstr))
 
         # object.unpack(objectstr)
 
         m1.send_json(objectstr)
-        print "send OK"
-        print m1.recv_json()
-    hqdata.join()    
+        zoePrint( "send OK")
+        zoePrint("{}".format( m1.recv_json()))
+
 
 def test2(flag=1):
+    zoePrint("run test2")
     context = zmq.Context.instance()
     m1 = context.socket(zmq.REQ)
-    m1.setsockopt(zmq.IDENTITY, b"tianjun")
-    m1.connect("tcp://%s:%d" % (s_host,8197))
-    hqdata = ZoeDataThread()
-    hqdata.start()
-    Contracts = ('6EZ5','GCZ5','CLZ5','NQZ5')   
-    object = SPCmdNativeClient(m1)
+    m1.setsockopt(zmq.IDENTITY, IDENTITY)
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
+    Contracts = ('6EZ5','GCZ5','CLZ5','NQZ5') 
+
+    object = SPCmdNativeClient(m1) 
+    
     for c in Contracts:
-        print object.SubscribeTicker(c, flag)
- 
-    hqdata.join()  
-
-
+        zoePrint("{}".format( object.SubscribeTicker(c, flag)))
+    zoePrint("end test2")
 
 def test3():
+    zoePrint("run test3")    
     context = zmq.Context.instance()
     m1 = context.socket(zmq.REQ)
-    m1.setsockopt(zmq.IDENTITY, b"tianjun")
-    m1.connect("tcp://%s:%d" % (s_host,8197))
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
+    m1.setsockopt(zmq.IDENTITY, IDENTITY)
     args = {'AccNo':'TIM01','Price':12.3,'Qty':5,'BuySell':'B','ProdCode':'CLZ5'}
     object = SPCmdNativeClient(m1)
-    print object.AddOrder(order=args)
-
+    zoePrint("{}".format( object.AddOrder(order=args)))
+    zoePrint('--------------------------')
+    args = {'AccNo':'TIM01','Price':43.8,'Qty':5,'BuySell':'B','ProdCode':'CLZ5'}
+    zoePrint("{}".format( object.AddOrder(order=args)))
     '''
     ('Price',     c_double),              #价格
     ('StopLevel',     c_double),          #止损价格
@@ -161,25 +188,28 @@ def test3():
     '''
 
 def test4():
-  
+    zoePrint("run test4")  
     context = zmq.Context.instance()
     m1 = context.socket(zmq.REQ)
-    m1.setsockopt(zmq.IDENTITY, b"tianjun")
-    m1.connect("tcp://%s:%d" % (s_host,8197))
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
+    m1.setsockopt(zmq.IDENTITY, IDENTITY)
     object = SPCmdNativeClient(m1)
-    print object.GetOrderCount()
-
+    zoePrint("{}".format(object.GetOrderCount()))
+    zoePrint("end test4")
 
 def test5(flag=1):
-    hqdata = ZoeDataThread()
+    hqdata = ZoeDataThread(p2=True)
     hqdata.start()
- 
     hqdata.join()  
 
 if __name__ == '__main__':
-    hqdata = ZoeDataThread()
-    hqdata.start()      
+    p = PrintLoop(None,Event())
+    p.start()    
+    hqdata = ZoeDataThread(p2=True)
+    hqdata.start()     
+    test2() 
     test3()
+    hqdata.join()  
 
 
 

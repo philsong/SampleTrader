@@ -479,7 +479,8 @@ class spapi():
         #zoePrint('%s -- ConnectionError:%s,%s' % (datetime.datetime.now(),host_id, link_err))
         HqSender.send_multipart(['apiReturn',json.dumps((u'ConnectionError',host_id, link_err))])
     def InstrumentListReplyAddr(is_ready, ret_msg):
-        zoePrint('InstrumentListReply:%s,%s' % (is_ready,ret_msg))
+        HqSender.send_multipart(['apiReturn',json.dumps((u'InstrumentListReply',is_ready, ret_msg))])
+        #zoePrint('InstrumentListReply:%s,%s' % (is_ready,ret_msg))
         if is_ready:
            mySPAPI.runFlags['InstrumentList'] = is_ready
     #def ProductListReplyAddr(is_ready, ret_msg):
@@ -549,8 +550,8 @@ class ZmqServerThread(Thread):
         super(ZmqServerThread,self).__init__()
         self.spApi =  spApi
         self.hq_publisher = context.socket(zmq.PUB)
-        #self.hq_publisher.setsockopt(zmq.IDENTITY, ZoeIDENTITY)
         self.hq_publisher.connect('tcp://%s:%d' % (self.spApi.ZoeServerSocket['DBsubServerIP'],self.spApi.ZoeServerSocket['DBsubServerPort']))  
+        self.hq_publisher.setsockopt(zmq.IDENTITY, ZoeIDENTITY)
             
     def run(self):
         zoePrint("ZmqServerThread is Running... ")  
@@ -571,7 +572,8 @@ class ZmqServerThread(Thread):
                 self.hq_publisher.send_multipart(msg)
                 topic,ts = msg[0],json.loads(msg[1])
                 if (topic=='ticker'):
-                    zoePrint( "%(now)s ----  %(ProdCode)4s: %(Price)10s %(Qty)10s" % {'now':datetime.datetime.now(),'ProdCode':ts['ProdCode'],'Price':ts['Price'],'Qty':ts['Qty']})
+                    pass
+                    #zoePrint( "%(now)s ----  %(ProdCode)4s: %(Price)10s %(Qty)10s" % {'now':datetime.datetime.now(),'ProdCode':ts['ProdCode'],'Price':ts['Price'],'Qty':ts['Qty']})
                 else:
                     zoePrint("{} {}".format(topic,ts))
             if socks.get(CmdController) == zmq.POLLIN:
