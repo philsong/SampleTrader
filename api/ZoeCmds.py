@@ -7,6 +7,7 @@ import struct
 import pickle
 import inspect
 import sys
+import binascii
 #import pdb
 
 class SPCmdBase(object): #用于定义 SP 命令
@@ -226,18 +227,13 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
         ID = self.SrcStationID
         self.SrcStationID = self.DstStationID
         self.DstStationID = ID
-        
-    def generateCRC(self):
-        MAC = '11111111'
-        # finished function, can use 3des method
-        self.MAC = MAC
     
     def __init__(self,buf = None):
         if buf:
             self.unpack(buf)
 
     def __call__(self,buf):
-        self.unpack(buf)   
+        return self.unpack(buf)   
                  
     @property
     def PktLen(self):
@@ -263,11 +259,9 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
     
     
     def __calculateMAC(self):
-        if (not self.HeadDataBuf):
-            self.__packHead()
         buf = self.HeadDataBuf+self.CmdDataBuf
-        pass # 这里计算8位的检验码
-        self.MAC  = '11111111'      
+        CRC = "{:08X}".format( (binascii.crc32(buf) & 0xFFFFFFFF)) # 这里计算8位的检验码
+        return CRC    
 
     def __packHead(self):
         self.HeadDataBuf = struct.pack('2s 4s 4s 4s 16s 4s 1s',  # 头定长 35字节 
@@ -280,8 +274,8 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
                     str(self.ZipFlag))
 
     def pack(self):
-        if (not self.MAC):
-            self.__calculateMAC()
+        self.__packHead()
+        self.MAC = self.__calculateMAC()
         return self.HeadDataBuf+self.CmdDataBuf+self.MAC
         
     def __unpackHead(self):
@@ -299,8 +293,14 @@ class SPCommObject(object): #用于定义zmq中传输的内容  #added by tim 20
         self.HeadDataBuf = buf[:35]
         self.MAC = buf[-8:]
         self.CmdDataBuf = buf[35:-8]
+        
+        if self.__calculateMAC() <> self.MAC:
+            #print '{}:{}'.format(self.__calculateMAC(),self.MAC)
+            raise RuntimeError('Packet CRC Error!')
+        
         self.__unpackHead()
-
+        return self.CmdDataBuf
+        
     def __str__(self):
         return self.pack()
 
@@ -1125,9 +1125,8 @@ class SPCmdNativeClient(object):
         self.spCommObject.CmdDataBuf = pickle.dumps(_fields)   
         if  self.socket:
             self.socket.send_json(self.spCommObject.pack())
-            _revMsg=self.socket.recv_json()
-            self.spCommObject.unpack(_revMsg)
-            return pickle.loads(self.spCommObject.CmdDataBuf)
+            _revMsg=self.socket.recv_json()  # use poll to timeout?
+            return pickle.loads(self.spCommObject.unpack(_revMsg))
         else:
             return self.spCommObject.pack()
                  

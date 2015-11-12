@@ -699,7 +699,8 @@ class APIServerThread(Thread):
                         elif mySCO.CmdType == 'CB':
                             mySCP = SPCmdNativeProcess(self.mySPAPI)
                             mySCO.MessageReply = mySCP.execute_cmd(mySCO.CmdDataBuf)
-                            _message_reply = str(mySCO)
+                            mySCO.reverseStationID()
+                            _message_reply = mySCO.pack()
                     if _message_reply:
                         #zoePrint( 'in _message_reply :%s' % _message_reply )
                         m1.send_json(_message_reply)
