@@ -110,9 +110,9 @@ class ZoeDataThread(Thread):
 def test1(flag=1):
     context = zmq.Context.instance()
     m1 = context.socket(zmq.REQ)
-    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
     m1.setsockopt(zmq.IDENTITY, IDENTITY)
     Contracts = ('6EZ5','GCZ5','CLZ5','NQZ5')   
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
     object = SPCommObject()
     for c in Contracts:
         object.CmdType = 'CA'
@@ -146,8 +146,8 @@ def test3():
     zoePrint("run test3")    
     context = zmq.Context.instance()
     m1 = context.socket(zmq.REQ)
-    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
     m1.setsockopt(zmq.IDENTITY, IDENTITY)
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
     args = {'AccNo':'TIM01','Price':12.3,'Qty':5,'BuySell':'B','ProdCode':'CLZ5'}
     object = SPCmdNativeClient(m1)
     zoePrint("{}".format( object.AddOrder(order=args)))
@@ -191,8 +191,8 @@ def test4():
     zoePrint("run test4")  
     context = zmq.Context.instance()
     m1 = context.socket(zmq.REQ)
-    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
     m1.setsockopt(zmq.IDENTITY, IDENTITY)
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
     object = SPCmdNativeClient(m1)
     zoePrint("{}".format(object.GetOrderCount()))
     zoePrint("end test4")
@@ -205,11 +205,12 @@ def test5(flag=1):
 if __name__ == '__main__':
     p = PrintLoop(None,Event())
     p.start()    
-    hqdata = ZoeDataThread(p2=True)
-    hqdata.start()     
+    
+    #hqdata = ZoeDataThread(p2=True)
+    #hqdata.start()     
     test2() 
     test3()
-    hqdata.join()  
+    #hqdata.join()  
 
 
 

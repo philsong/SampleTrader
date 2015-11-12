@@ -101,11 +101,14 @@ def zoePrint(msg):
 zoe_stops = []          
 
 
-def SendReturnMsg(p_list):
+def SendReturnMsg(p_topic,p_outList):
     try:
-        HqSender.send_multipart(p_list)  
+        #HqSender.send_multipart([p_topic,json.dumps(p_outList)])  
+        HqSender.send_multipart([p_topic,json.dumps(p_outList,encoding="latin-1")]) 
+        #HqSender.send_multipart([p_topic,json.dumps(p_outList,ensure_ascii=False)]) 
     except Exception , e:
-        traceback.print_exc()    
+        #traceback.print_exc() 
+        zoePrint(e)   
     
 
 class spapi():
@@ -478,36 +481,36 @@ class spapi():
         if mutex.acquire(1):
             mySPAPI.loginStatus[80] = (login_status,"")
             mutex.release()  
-        SendReturnMsg(['apiReturn',json.dumps((u'LoginStatusUpdate',login_status))])
+        SendReturnMsg('apiReturn',(u'LoginStatusUpdate',login_status))
     def LoginReplyAddr(ret_code, ret_msg):
         #zoePrint('LoginReply:%s,%s' % (ret_code,ret_msg))
-        SendReturnMsg(['apiReturn',json.dumps((u'LoginReply',ret_code,ret_msg))])
+        SendReturnMsg('apiReturn',(u'LoginReply',ret_code,ret_msg))
     def LogoutReplyAddr(ret_code, ret_msg):
         #zoePrint('LogoutReply:%s,%s' % (ret_code,ret_msg))
-        SendReturnMsg(['apiReturn',json.dumps((u'LogoutReply',ret_code,ret_msg))])
+        SendReturnMsg('apiReturn',(u'LogoutReply',ret_code,ret_msg))
     def LoginAccInfoAddr(acc_no, max_bal, max_pos, max_order):
-        SendReturnMsg(['apiReturn',json.dumps((u'LoginAccInfo',acc_no, max_bal, max_pos, max_order))])
+        SendReturnMsg('apiReturn',(u'LoginAccInfo',acc_no, max_bal, max_pos, max_order))
     def ApiOrderRequestFailedAddr(tinyaction,order, err_code, err_msg):
-        SendReturnMsg(['apiReturn',json.dumps((u'OrderRequestFailed',tinyaction,order.contents.zoeGetDict(), err_code, err_msg))])
+        SendReturnMsg('apiReturn',(u'OrderRequestFailed',tinyaction,order.contents.zoeGetDict(), err_code, err_msg))
     def ApiOrderReportAddr(rec_no, order):
-        SendReturnMsg(['apiReturn',json.dumps((u'OrderReport',rec_no,order.contents.zoeGetDict()))])
+        SendReturnMsg('apiReturn',(u'OrderReport',rec_no,order.contents.zoeGetDict()))
     def ApiTradeReportAddr(rec_no, trade):
-        SendReturnMsg(['apiReturn',json.dumps((u'TradeReport',rec_no,trade.contents.zoeGetDict()))])
+        SendReturnMsg('apiReturn',(u'TradeReport',rec_no,trade.contents.zoeGetDict()))
     def ApiPriceUpdateAddr(price):
-        SendReturnMsg(['price',json.dumps(price.contents.zoeGetDict())])
+        SendReturnMsg('price',price.contents.zoeGetDict())
     def ApiTickerUpdateAddr(ticker):
-        SendReturnMsg(['ticker',json.dumps(ticker.contents.zoeGetDict())])
+        SendReturnMsg('ticker',ticker.contents.zoeGetDict())
     def PServerLinkStatusUpdateAddr(host_id, con_status):
         #zoePrint('%s -- PServerLinkStatusUpdate:%s,%s' % (datetime.datetime.now(),host_id, con_status))
-        SendReturnMsg(['apiReturn',json.dumps((u'PServerLinkStatusUpdate',host_id, con_status))])
+        SendReturnMsg('apiReturn',(u'PServerLinkStatusUpdate',host_id, con_status))
         if mutex.acquire(1):
             mySPAPI.loginStatus[host_id] = (con_status,"")
             mutex.release()          
     def ConnectionErrorAddr(host_id, link_err):
         #zoePrint('%s -- ConnectionError:%s,%s' % (datetime.datetime.now(),host_id, link_err))
-        SendReturnMsg(['apiReturn',json.dumps((u'ConnectionError',host_id, link_err))])
+        SendReturnMsg('apiReturn',(u'ConnectionError',host_id, link_err))
     def InstrumentListReplyAddr(is_ready, ret_msg):
-        SendReturnMsg(['apiReturn',json.dumps((u'InstrumentListReply',is_ready, ret_msg))])
+        SendReturnMsg('apiReturn',(u'InstrumentListReply',is_ready, ret_msg))
         #zoePrint('InstrumentListReply:%s,%s' % (is_ready,ret_msg))
         if is_ready:
            mySPAPI.runFlags['InstrumentList'] = is_ready
@@ -515,14 +518,14 @@ class spapi():
     #    print('ProductListReply:%s,%s' % (is_ready,ret_msg))
     def PswChangeReplyAddr(ret_code, ret_msg):  #add xiaolin 2013-03-19
         #zoePrint('PswChangeReply:%s,%s' % (ret_code,ret_msg))
-        SendReturnMsg(['apiReturn',json.dumps((u'PswChangeReply',ret_code,ret_msg))])
+        SendReturnMsg('apiReturn',(u'PswChangeReply',ret_code,ret_msg))
     def ProductListByCodeReplyAddr(inst_code, is_ready, ret_msg):   #add 2013-04-25
         #print('ProductListByCodeReply:%s,%s,%s' % (inst_code,is_ready,ret_msg))
         t=DealProductListByCodeReply(mySPAPI,inst_code)
         t.start()
 
     def BusinessDateReplyAddr(business_date):
-        SendReturnMsg(['apiReturn',json.dumps((u'BusinessDateReply',business_date))])
+        SendReturnMsg('apiReturn',(u'BusinessDateReply',business_date))
         
     def register_callbacks(self):
         self.sp.SPAPI_RegisterLoginReply(self.cbLoginReplyAddr)
@@ -683,7 +686,6 @@ class APIServerThread(Thread):
                 try:
                     _message = m1.recv_json()
                     _message_reply = ''
-                    #zoePrint(_message)
                     if len(_message)>35:
                         mySCO = SPCommObject(_message)
                         if mySCO.CmdType == 'CA':
@@ -691,15 +693,13 @@ class APIServerThread(Thread):
                             _message_reply = mySCP.execute_cmd(mySCO.CmdDataBuf)
                         elif mySCO.CmdType == 'CB':
                             mySCP = SPCmdNativeProcess(self.mySPAPI)
-                            #zoePrint(mySCO.CmdDataBuf)
-                            #_message_reply = mySCP.execute_cmd(mySCO.CmdDataBuf)
                             mySCO.MessageReply = mySCP.execute_cmd(mySCO.CmdDataBuf)
                             _message_reply = str(mySCO)
                     if _message_reply:
                         #zoePrint( 'in _message_reply :%s' % _message_reply )
                         m1.send_json(_message_reply)
                     else:
-                        pass # 处理没有调用返回时如何响应客户端
+                        zoePrint( "No reply! check it please!") # 处理没有调用返回时如何响应客户端
                 except KeyboardInterrupt ,e:
                     zoePrint( "Bye Bye!")                     
                 except ValueError ,e:
@@ -769,10 +769,25 @@ class ZoeService(Service):
         zoe_stops.reverse()
         for stop in zoe_stops:
             stop.set()        
+    
         
+def main():
+        _event = Event()
+        #p = PrintLoop(getLogger(),_event)
+        p = PrintLoop(None,_event)
+        p.start()
+        zoe_stops.append(_event)        
+        app = APIServerThread()
+        app.start()
+        app.join()    
+        CmdController.send_multipart(['cmd','Quit'])
+        time.sleep(3)
+        zoe_stops.reverse()
+        for stop in zoe_stops:
+            stop.set()       
         
 if __name__ == '__main__': 
     import win32serviceutil
     setServerIP('10.68.89.100','10.68.89.2')  
     win32serviceutil.HandleCommandLine(    ZoeService    )
-
+    #main()
