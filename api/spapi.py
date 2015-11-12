@@ -66,6 +66,9 @@ ZoeIDENTITY = b'spapi'
 
 printQueue = Queue()
 context = zmq.Context.instance()
+CmdController = context.socket(zmq.PUB)
+CmdController.bind("inproc://command")
+
 
 class PrintLoop(Thread):
     def __init__(self, log, event):
@@ -698,14 +701,13 @@ class APIServerThread(Thread):
                     else:
                         pass # 处理没有调用返回时如何响应客户端
                 except KeyboardInterrupt ,e:
-                    zoePrint( "Bye Bye!")
-                    raise e                       
+                    zoePrint( "Bye Bye!")                     
                 except ValueError ,e:
-                    #zoePrint( "ValueError:%s" % e)
-                    traceback.print_exc()
+                    zoePrint( "ValueError:{}".format(e))
+                    #traceback.print_exc()
                 except Exception , e:
-                    #zoePrint( "Exception:%s" % e)
-                    traceback.print_exc()
+                    zoePrint( "Exception:{}".format(e))
+                    #traceback.print_exc()
                     
             if socks.get(m2) == zmq.POLLIN:
                 try:
@@ -714,7 +716,9 @@ class APIServerThread(Thread):
                     m2.send_json(_message)
                 except ValueError ,e:
                     zoePrint( "Error:%s" % e)
-                    
+                except Exception , e:
+                    zoePrint( "Exception:{}".format(e))
+                                        
             if socks.get(CmdController) == zmq.POLLIN:
                topic,_message = CmdController.recv_multipart()
                zoePrint( "{} {}".format(topic,_message))
@@ -757,10 +761,9 @@ class ZoeService(Service):
         app = APIServerThread()
         app.start()
         app.join()
-        
+        #self.stop()
+                
     def stop(self):
-        CmdController = context.socket(zmq.PUB)
-        CmdController.bind("inproc://command")
         CmdController.send_multipart(['cmd','Quit'])
         time.sleep(3)
         zoe_stops.reverse()
