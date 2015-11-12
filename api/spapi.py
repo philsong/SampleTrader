@@ -497,7 +497,9 @@ class spapi():
     def ApiTradeReportAddr(rec_no, trade):
         SendReturnMsg('apiReturn',(u'TradeReport',rec_no,trade.contents.zoeGetDict()))
     def ApiPriceUpdateAddr(price):
+        #zoePrint("{}".format(price.contents.zoeGetDict()))
         SendReturnMsg('price',price.contents.zoeGetDict())
+        
     def ApiTickerUpdateAddr(ticker):
         SendReturnMsg('ticker',ticker.contents.zoeGetDict())
     def PServerLinkStatusUpdateAddr(host_id, con_status):
@@ -581,18 +583,18 @@ class ZmqServerThread(Thread):
         super(ZmqServerThread,self).__init__()
         self.spApi =  spApi
         self.hq_publisher = context.socket(zmq.PUB)
+        #self.hq_publisher.setsockopt(zmq.IDENTITY, ZoeIDENTITY)
         self.hq_publisher.connect('tcp://%s:%d' % (self.spApi.ZoeServerSocket['DBsubServerIP'],self.spApi.ZoeServerSocket['DBsubServerPort']))  
-        self.hq_publisher.setsockopt(zmq.IDENTITY, ZoeIDENTITY)
             
     def run(self):
         zoePrint("ZmqServerThread is Running... ")  
         Treceiver = context.socket(zmq.SUB)
-        Treceiver.bind("inproc://marketdata")   
         Treceiver.setsockopt(zmq.SUBSCRIBE,'')        
+        Treceiver.bind("inproc://marketdata")   
         #Cmdcontext = zmq.Context.instance()
         CmdController = context.socket(zmq.SUB)
-        CmdController.connect("inproc://command")
         CmdController.setsockopt(zmq.SUBSCRIBE,'')
+        CmdController.connect("inproc://command")
         poller = zmq.Poller()
         poller.register(Treceiver, zmq.POLLIN)
         poller.register(CmdController, zmq.POLLIN)        
@@ -601,10 +603,13 @@ class ZmqServerThread(Thread):
             if socks.get(Treceiver) == zmq.POLLIN:            
                 msg = Treceiver.recv_multipart()
                 self.hq_publisher.send_multipart(msg)
-                topic,ts = msg[0],json.loads(msg[1])
+                topic,ts = msg[0],json.loads(msg[1])                
                 if (topic=='ticker'):
                     pass
                     #zoePrint( "%(now)s ----  %(ProdCode)4s: %(Price)10s %(Qty)10s" % {'now':datetime.datetime.now(),'ProdCode':ts['ProdCode'],'Price':ts['Price'],'Qty':ts['Qty']})
+                elif (topic=='price'):
+                    pass
+                    #zoePrint("{} {}".format(topic,ts))
                 else:
                     zoePrint("{} {}".format(topic,ts))
             if socks.get(CmdController) == zmq.POLLIN:
@@ -704,10 +709,10 @@ class APIServerThread(Thread):
                     zoePrint( "Bye Bye!")                     
                 except ValueError ,e:
                     zoePrint( "ValueError:{}".format(e))
-                    #traceback.print_exc()
+                    traceback.print_exc()
                 except Exception , e:
                     zoePrint( "Exception:{}".format(e))
-                    #traceback.print_exc()
+                    traceback.print_exc()
                     
             if socks.get(m2) == zmq.POLLIN:
                 try:
@@ -789,5 +794,5 @@ def main():
 if __name__ == '__main__': 
     import win32serviceutil
     setServerIP('10.68.89.100','10.68.89.2')  
-    win32serviceutil.HandleCommandLine(    ZoeService    )
-    #main()
+    #win32serviceutil.HandleCommandLine(    ZoeService    )
+    main()

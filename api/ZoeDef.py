@@ -274,13 +274,25 @@ class SPApiPrice(Structure):
     ('ProdName',     c_char * 40),               #STR40 合约名称
     ('DecInPrice',     c_int8) ]              #合约小数位 
     def zoeGetDict(self):
-        _keys = [k[0] for k in self._fields_]
-        return {k:getattr(self,k) for k in _keys}
+        _dict = dict(self._fields_)
+        tempDict={}
+        for k,v in  _dict.items():
+            if issubclass(v,Array):
+                tempDict[k] = [i for i in getattr(self,k)]
+            else:
+                tempDict[k] = getattr(self,k) 
+        return tempDict
     def zoeSetDict(self,vks):
-        _keys = [k[0] for k in self._fields_]
-        for k in _keys:
+        _dict = dict(self._fields_)
+        for k,v in  _dict.items():
             if vks.has_key(k):
-                setattr(self,k,vks[k])    
+                if issubclass(v,Array):
+                    _a = getattr(self,k)
+                    for i in range(0,len(vks[k])):
+                        if i < SP_MAX_DEPTH:
+                            _a[i]= vks[k][i]
+                else:
+                    setattr(self,k,vks[k])    
     def __str__(self):
         return "$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s|$s" % (
         self.Bid,self.BidQty,self.BidTicket,self.Ask,self.AskQty,self.AskTicket,self.Last,

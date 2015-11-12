@@ -77,13 +77,13 @@ class ZoeDataThread(Thread):
     def connHQServer(self):
         self.context = zmq.Context.instance()# or zmq.Context() 
         self.frontend_socket = self.context.socket(zmq.SUB)
-        self.frontend_socket.connect(self.SubtoString)
         #self.frontend_socket.setsockopt(zmq.IDENTITY, IDENTITY)
         if self.p2:
             self.frontend_socket.setsockopt(zmq.SUBSCRIBE,b'ticker')
+            self.frontend_socket.setsockopt(zmq.SUBSCRIBE,b'price')
         if self.p1:
             self.frontend_socket.setsockopt(zmq.SUBSCRIBE,b'apiReturn')
-        #self.frontend_socket.connect(self.SubtoString)
+        self.frontend_socket.connect(self.SubtoString)
 
         zoePrint("Finished init zmq.")
 
@@ -92,7 +92,7 @@ class ZoeDataThread(Thread):
         while (True):
             try:
                 _type, data = self.frontend_socket.recv_multipart()
-                if (_type == 'ticker'):
+                if (_type in ['ticker','price'] ):
                     zoePrint("{} -- {}".format(_type, json.loads(data)))
                 if (_type == 'apiReturn'):
                     zoePrint("{} -- {}".format(_type,json.loads(data)))
@@ -151,9 +151,9 @@ def test3():
     args = {'AccNo':'TIM01','Price':12.3,'Qty':5,'BuySell':'B','ProdCode':'CLZ5'}
     object = SPCmdNativeClient(m1)
     zoePrint("{}".format( object.AddOrder(order=args)))
-    zoePrint('--------------------------')
     args = {'AccNo':'TIM01','Price':43.8,'Qty':5,'BuySell':'B','ProdCode':'CLZ5'}
     zoePrint("{}".format( object.AddOrder(order=args)))
+    zoePrint('-----------------------------------------------------------------')    
     '''
     ('Price',     c_double),              #价格
     ('StopLevel',     c_double),          #止损价格
@@ -197,20 +197,69 @@ def test4():
     zoePrint("{}".format(object.GetOrderCount()))
     zoePrint("end test4")
 
+
+
+
 def test5(flag=1):
     hqdata = ZoeDataThread(p2=True)
     hqdata.start()
     hqdata.join()  
 
+def testGetTradeCount():
+    zoePrint("run testGetTradeCount")  
+    context = zmq.Context.instance()
+    m1 = context.socket(zmq.REQ)
+    m1.setsockopt(zmq.IDENTITY, IDENTITY)
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
+    object = SPCmdNativeClient(m1)
+    zoePrint("{}".format(object.GetTradeCount()))
+    zoePrint("end testGetTradeCount")
+
+def testGetTrade():
+    zoePrint("run testGetTrade")  
+    context = zmq.Context.instance()
+    m1 = context.socket(zmq.REQ)
+    m1.setsockopt(zmq.IDENTITY, IDENTITY)
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
+    object = SPCmdNativeClient(m1)
+    zoePrint("{}".format(object.GetTrade(0,{})))
+    zoePrint("end testGetTrade")
+
+
+def SubscribePrice(p_code,p_mode):
+    zoePrint("run SubscribePrice")  
+    context = zmq.Context.instance()
+    m1 = context.socket(zmq.REQ)
+    m1.setsockopt(zmq.IDENTITY, IDENTITY)
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
+    object = SPCmdNativeClient(m1)
+    zoePrint("{}".format(object.SubscribePrice(prod_code = p_code,mode = p_mode)))
+    zoePrint("end SubscribePrice")
+
+
+def GetPriceByCode(code):
+    zoePrint("run GetPriceByCode")  
+    context = zmq.Context.instance()
+    m1 = context.socket(zmq.REQ)
+    m1.setsockopt(zmq.IDENTITY, IDENTITY)
+    m1.connect("tcp://%s:%d" % (s_host,ZoeDef.queue_frontend_port))
+    object = SPCmdNativeClient(m1)
+    zoePrint("{}".format(object.GetPriceByCode(code,{})))
+    zoePrint("end GetPriceByCode")
+
+
+
 if __name__ == '__main__':
     p = PrintLoop(None,Event())
     p.start()    
     
-    #hqdata = ZoeDataThread(p2=True)
-    #hqdata.start()     
-    test2() 
-    test3()
-    #hqdata.join()  
+    hqdata = ZoeDataThread(p2=True)
+    hqdata.start()     
+    test2(0)
+    Contracts = ('6EZ5','GCZ5','CLZ5','NQZ5') 
+    for c in Contracts:
+        SubscribePrice(c,1)
+    hqdata.join()  
 
 
 

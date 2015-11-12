@@ -140,8 +140,8 @@ class ZoeDevice(object):
         self.redis.sadd('validAddress',b'spapi')
         self.redis.sadd('validAddress',b'zoedata')
    
-    def validAddressSUB(self,message):
-        self.printMessage(message,channel = "marketdata")
+    def validAddressSUB(self,message,direction=0):
+        self.printMessage(message,"marketdata",direction)
         if len(message) == 3:
             _address, _empty, _message = message
             #if (_address in self._validAddress):
@@ -153,7 +153,7 @@ class ZoeDevice(object):
                 False
         return True
         
-    def printMessage(self,message,channel = "command"):
+    def printMessage(self,message,channel,direction): #direction = 0 if from,  1 is to
         for part in message:
             #print "[%03d]" % len(part),
             s1 = "[%03d]" % len(part)
@@ -168,11 +168,14 @@ class ZoeDevice(object):
             else:
                 # not text, print hex 
                 s2 = binascii.hexlify(part)
-            self.redis.publish(channel,"{} --- {}".format(s1,s2)) 
+            if (direction):
+                self.redis.publish(channel,"{} --> {}".format(s1,s2)) 
+            else:
+                self.redis.publish(channel,"{} <-- {}".format(s1,s2)) 
                     
-    def validAddress(self,message,flag=True):
+    def validAddress(self,message,direction=0,flag=True):
         if (not flag): return True
-        self.printMessage(message, channel = "command")
+        self.printMessage(message,"command",direction)
         if len(message) == 3:
             _address, _empty, _message = message
             #if (_address in self._validAddress):
@@ -264,52 +267,52 @@ class ZoeDevice(object):
                 #行情广播,到API  PUB -> XSUB-XPUB-> SUB
                 if (socks.get(forwarder_frontend) == zmq.POLLIN):
                     message = forwarder_frontend.recv_multipart()
-                    if self.validAddressSUB(message):
+                    if self.validAddressSUB(message,1):
                         forwarder_backend.send_multipart(message)
                 elif (socks.get(forwarder_backend) == zmq.POLLIN):
                     message = forwarder_backend.recv_multipart()
-                    if self.validAddressSUB(message):
+                    if self.validAddressSUB(message,0):
                         forwarder_frontend.send_multipart(message)
                 #指令队列，到API Service   REQ -- ROUTER-DEALER -- REP    
                 elif (socks.get(queue_frontend) == zmq.POLLIN): 
                     message = queue_frontend.recv_multipart()
-                    if self.validAddress(message):
+                    if self.validAddress(message,1):
                         queue_backend.send_multipart(message)
                 elif (socks.get(queue_backend) == zmq.POLLIN):
                     message = queue_backend.recv_multipart()
-                    if self.validAddress(message):
+                    if self.validAddress(message,0):
                         queue_frontend.send_multipart(message)
                 #行情广播,到DB    PUB -> XSUB-XPUB-> SUB    
                 elif (socks.get(db_fw_f) == zmq.POLLIN):
                     message = db_fw_f.recv_multipart()
-                    if self.validAddressSUB(message):
+                    if self.validAddressSUB(message,1):
                         db_fw_b.send_multipart(mesmessage)
                 elif (socks.get(db_fw_b) == zmq.POLLIN):
                     message = db_fw_b.recv_multipart()
-                    if self.validAddressSUB(message):
+                    if self.validAddressSUB(message,0):
                         db_fw_f.send_multipart(message)
                 #指令队列，到DB Service   REQ -- ROUTER-DEALER -- REP    
                 elif (socks.get(db_q_f) == zmq.POLLIN):
                     message = db_q_f.recv_multipart()
-                    if self.validAddress(message):
+                    if self.validAddress(message,1):
                         db_q_b.send_multipart(message)
                 elif (socks.get(db_q_b) == zmq.POLLIN):
                     message = db_q_b.recv_multipart()
-                    if self.validAddress(message):
+                    if self.validAddress(message,0):
                         db_q_f.send_multipart(message)
                 #指令队列，到OMS Service (Order Manager System)  REQ -- ROUTER-DEALER -- REP    
                 elif (socks.get(oms_q_f) == zmq.POLLIN):
                     message = oms_q_f.recv_multipart()
-                    if self.validAddress(message):
+                    if self.validAddress(message,1):
                         oms_q_b.send_multipart(message)
                 elif (socks.get(oms_q_b) == zmq.POLLIN):
                     message = oms_q_b.recv_multipart()
-                    if self.validAddress(message):
+                    if self.validAddress(message,0):
                         oms_q_f.send_multipart(message)
                 #指令队列，到strategy Service REQ -- ROUTER-DEALER -- REP    
                 elif (socks.get(stg_q_f) == zmq.POLLIN):
                     message = stg_q_f.recv_multipart()
-                    if self.validAddress(message):
+                    if self.validAddress(message,1):
                         stg_q_b.send_multipart(message)
                     '''
                     if len(message) == 1 and message[0] == PPP_HEARTBEAT:
@@ -320,7 +323,7 @@ class ZoeDevice(object):
                     '''
                 elif (socks.get(stg_q_b) == zmq.POLLIN):
                     message = stg_q_b.recv_multipart()
-                    if self.validAddress(message):
+                    if self.validAddress(message,0):
                         stg_q_f.send_multipart(message)
                     #self.heartbeatclients['stg_q_b'][1] = time.time() + HEARTBEAT_INTERVAL
                 else:
