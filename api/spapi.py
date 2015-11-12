@@ -26,6 +26,20 @@ from ZoeCmds import *
 from ZoeWinService import Service, Instart
 import json
 
+def getLogger(name='ZoeSPAPI', rootdir= os.path.dirname(os.path.abspath(__file__)),level = logging.INFO):
+    LOG_FILE = 'ZoeSPAPI.log'
+    if not rootdir:
+       rootdir =  os.path.dirname(os.path.abspath(__file__))
+    handler = logging.handlers.RotatingFileHandler(os.path.join( os.path.realpath(rootdir),LOG_FILE), maxBytes = 1024*1024, backupCount = 5)
+    fmt = '%(asctime)s - %(filename)s:%(lineno)s - %(name)s - %(message)s'  
+    formatter = logging.Formatter(fmt)
+    handler.setFormatter(formatter)
+    logger = logging.getLogger()
+    logger.addHandler(handler)
+    logger.setLevel(level)    
+    return logger
+
+
 ZoeServerSocket = {'ZoeDeviceHost':'10.68.89.100','DBsubServerIP':'10.68.89.100','ApiStgRepServerHost':'10.68.89.100','ApiCmdRepServerHost':'10.68.89.100','SPServerIP':'10.68.89.2',
                     'DBsubServerPort':forwarder_backend_port,'ApiStgRepServerPort':stg_q_b_port,'ApiCmdRepServerPort':queue_backend_port}
 
@@ -58,6 +72,7 @@ class PrintLoop(Thread):
         super(PrintLoop,self).__init__()
         self.log = log
         self._event = event   
+        self.daemon = True
         assert(event)     
     def run(self):
         while (not self._event.is_set()):
@@ -82,6 +97,14 @@ def zoePrint(msg):
 
 zoe_stops = []          
 
+
+def SendReturnMsg(p_list):
+    try:
+        HqSender.send_multipart(p_list)  
+    except Exception , e:
+        traceback.print_exc()    
+    
+
 class spapi():
     sp=None   
     spapi_inited = False    
@@ -97,6 +120,8 @@ class spapi():
                 dllfilename = u'spapidll64.dll'
             if (not exists(dllfilename)):
                 dllfilename = u'api/'+ dllfilename
+            if (not exists(dllfilename)):
+                dllfilename = os.path.join(os.path.dirname(os.path.abspath(__file__)),dllfilename[4:])            
         if (not self.sp):
             self.sp = WinDLL(dllfilename)
             #self.sp = CDLL(dllfilename)
@@ -450,36 +475,36 @@ class spapi():
         if mutex.acquire(1):
             mySPAPI.loginStatus[80] = (login_status,"")
             mutex.release()  
-        HqSender.send_multipart(['apiReturn',json.dumps((u'LoginStatusUpdate',login_status))])
+        SendReturnMsg(['apiReturn',json.dumps((u'LoginStatusUpdate',login_status))])
     def LoginReplyAddr(ret_code, ret_msg):
         #zoePrint('LoginReply:%s,%s' % (ret_code,ret_msg))
-        HqSender.send_multipart(['apiReturn',json.dumps((u'LoginReply',ret_code,ret_msg))])
+        SendReturnMsg(['apiReturn',json.dumps((u'LoginReply',ret_code,ret_msg))])
     def LogoutReplyAddr(ret_code, ret_msg):
         #zoePrint('LogoutReply:%s,%s' % (ret_code,ret_msg))
-        HqSender.send_multipart(['apiReturn',json.dumps((u'LogoutReply',ret_code,ret_msg))])
+        SendReturnMsg(['apiReturn',json.dumps((u'LogoutReply',ret_code,ret_msg))])
     def LoginAccInfoAddr(acc_no, max_bal, max_pos, max_order):
-        HqSender.send_multipart(['apiReturn',json.dumps((u'LoginAccInfo',acc_no, max_bal, max_pos, max_order))])
+        SendReturnMsg(['apiReturn',json.dumps((u'LoginAccInfo',acc_no, max_bal, max_pos, max_order))])
     def ApiOrderRequestFailedAddr(tinyaction,order, err_code, err_msg):
-        HqSender.send_multipart(['apiReturn',json.dumps((u'OrderRequestFailed',tinyaction,order.contents.zoeGetDict(), err_code, err_msg))])
+        SendReturnMsg(['apiReturn',json.dumps((u'OrderRequestFailed',tinyaction,order.contents.zoeGetDict(), err_code, err_msg))])
     def ApiOrderReportAddr(rec_no, order):
-        HqSender.send_multipart(['apiReturn',json.dumps((u'OrderReport',rec_no,order.contents.zoeGetDict()))])
+        SendReturnMsg(['apiReturn',json.dumps((u'OrderReport',rec_no,order.contents.zoeGetDict()))])
     def ApiTradeReportAddr(rec_no, trade):
-        HqSender.send_multipart(['apiReturn',json.dumps((u'TradeReport',rec_no,trade.contents.zoeGetDict()))])
+        SendReturnMsg(['apiReturn',json.dumps((u'TradeReport',rec_no,trade.contents.zoeGetDict()))])
     def ApiPriceUpdateAddr(price):
-        HqSender.send_multipart(['price',json.dumps(price.contents.zoeGetDict())])
+        SendReturnMsg(['price',json.dumps(price.contents.zoeGetDict())])
     def ApiTickerUpdateAddr(ticker):
-        HqSender.send_multipart(['ticker',json.dumps(ticker.contents.zoeGetDict())])
+        SendReturnMsg(['ticker',json.dumps(ticker.contents.zoeGetDict())])
     def PServerLinkStatusUpdateAddr(host_id, con_status):
         #zoePrint('%s -- PServerLinkStatusUpdate:%s,%s' % (datetime.datetime.now(),host_id, con_status))
-        HqSender.send_multipart(['apiReturn',json.dumps((u'PServerLinkStatusUpdate',host_id, con_status))])
+        SendReturnMsg(['apiReturn',json.dumps((u'PServerLinkStatusUpdate',host_id, con_status))])
         if mutex.acquire(1):
             mySPAPI.loginStatus[host_id] = (con_status,"")
             mutex.release()          
     def ConnectionErrorAddr(host_id, link_err):
         #zoePrint('%s -- ConnectionError:%s,%s' % (datetime.datetime.now(),host_id, link_err))
-        HqSender.send_multipart(['apiReturn',json.dumps((u'ConnectionError',host_id, link_err))])
+        SendReturnMsg(['apiReturn',json.dumps((u'ConnectionError',host_id, link_err))])
     def InstrumentListReplyAddr(is_ready, ret_msg):
-        HqSender.send_multipart(['apiReturn',json.dumps((u'InstrumentListReply',is_ready, ret_msg))])
+        SendReturnMsg(['apiReturn',json.dumps((u'InstrumentListReply',is_ready, ret_msg))])
         #zoePrint('InstrumentListReply:%s,%s' % (is_ready,ret_msg))
         if is_ready:
            mySPAPI.runFlags['InstrumentList'] = is_ready
@@ -487,14 +512,14 @@ class spapi():
     #    print('ProductListReply:%s,%s' % (is_ready,ret_msg))
     def PswChangeReplyAddr(ret_code, ret_msg):  #add xiaolin 2013-03-19
         #zoePrint('PswChangeReply:%s,%s' % (ret_code,ret_msg))
-        HqSender.send_multipart(['apiReturn',json.dumps((u'PswChangeReply',ret_code,ret_msg))])
+        SendReturnMsg(['apiReturn',json.dumps((u'PswChangeReply',ret_code,ret_msg))])
     def ProductListByCodeReplyAddr(inst_code, is_ready, ret_msg):   #add 2013-04-25
         #print('ProductListByCodeReply:%s,%s,%s' % (inst_code,is_ready,ret_msg))
         t=DealProductListByCodeReply(mySPAPI,inst_code)
         t.start()
 
     def BusinessDateReplyAddr(business_date):
-        HqSender.send_multipart(['apiReturn',json.dumps((u'BusinessDateReply',business_date))])
+        SendReturnMsg(['apiReturn',json.dumps((u'BusinessDateReply',business_date))])
         
     def register_callbacks(self):
         self.sp.SPAPI_RegisterLoginReply(self.cbLoginReplyAddr)
@@ -589,7 +614,6 @@ class APIServerThread(Thread):
         global HqSender,mutex,mySPAPI
         super(APIServerThread,self).__init__()
         mutex=Lock()
-
         HqSender = context.socket(zmq.PUB)
         HqSender.connect("inproc://marketdata")
 
@@ -727,7 +751,7 @@ class ZoeService(Service):
     _svc_display_name_ = 'Python Service ZoeService'
     def start(self):
         _event = Event()
-        p = PrintLoop(self.log,_event)
+        p = PrintLoop(getLogger(),_event)
         p.start()
         zoe_stops.append(_event)        
         app = APIServerThread()
@@ -743,30 +767,9 @@ class ZoeService(Service):
         for stop in zoe_stops:
             stop.set()        
         
-def test_start():
-        _event = Event()
-        p = PrintLoop(None,_event)
-        p.start()
-        zoe_stops.append(_event)        
-        app = APIServerThread()
-        app.start()
-        app.join()
-
-
-def test_stop():
-        CmdController = context.socket(zmq.PUB)
-        CmdController.bind("inproc://command")
-        CmdController.send_multipart(['cmd','Quit']) 
-        zoePrint("send Quit!")
-        time.sleep(10)       
-        zoePrint( "There is %d Threads!" % len(zoe_stops))
-        zoe_stops.reverse()
-        for stop in zoe_stops:
-            stop.set()
         
 if __name__ == '__main__': 
-    #import win32serviceutil
+    import win32serviceutil
     setServerIP('10.68.89.100','10.68.89.2')  
-    #Instart(ZoeService, 'ZoeService', 'Python Service ZoeService')
-    test_start()
-    #win32serviceutil.HandleCommandLine(    ZoeService    )
+    win32serviceutil.HandleCommandLine(    ZoeService    )
+
